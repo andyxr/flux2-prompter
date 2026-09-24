@@ -1,0 +1,913 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>FLUX.2 Prompt Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#EDEFF2; --surface:#FFFFFF; --surface-2:#F4F5F7; --ink:#16191E; --muted:#5A616E; --line:#D5D9E0;
+  --accent:#A3481C; --accent-ink:#FFFFFF; --focus:#C8662F;
+  --warn:#8E4A0E; --warn-bg:#F7E7D5; --ok:#2C6A45; --ok-bg:#DFEEE4; --info:#35547A; --info-bg:#E1E9F3;
+  --out-bg:#15181D; --out-ink:#E3E6EA; --out-dim:#8A92A0;
+  --r1:#2F7A52; --r2:#3560B0; --r3:#B0621A; --r4:#7A48A8; --r5:#B23B3B; --r6:#1F7F86; --r7:#8A7414; --r8:#9B4D72; --r9:#557A14; --r10:#4F5A6E;
+  --o1:#6FCF97; --o2:#86A8F0; --o3:#F2A861; --o4:#C49AEE; --o5:#F08A8A; --o6:#6FD2D8; --o7:#E0C860; --o8:#E39BBE; --o9:#A8D86A; --o10:#A8B2C4;
+  --display:"Schibsted Grotesk","IBM Plex Sans",system-ui,sans-serif;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#111317; --surface:#1A1D23; --surface-2:#21252C; --ink:#E5E8EC; --muted:#9AA2AF; --line:#323842;
+    --accent:#F08A4B; --accent-ink:#1A0E06; --focus:#F5A574;
+    --warn:#F2B27A; --warn-bg:#3A2716; --ok:#8FD3A8; --ok-bg:#1B3325; --info:#9DBBE3; --info-bg:#1C2837;
+    --out-bg:#0A0C0F; --out-ink:#DDE1E6; --out-dim:#7A8290;
+    --r1:#6FCF97; --r2:#86A8F0; --r3:#F2A861; --r4:#C49AEE; --r5:#F08A8A; --r6:#6FD2D8; --r7:#E0C860; --r8:#E39BBE; --r9:#A8D86A; --r10:#A8B2C4;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#111317; --surface:#1A1D23; --surface-2:#21252C; --ink:#E5E8EC; --muted:#9AA2AF; --line:#323842;
+  --accent:#F08A4B; --accent-ink:#1A0E06; --focus:#F5A574;
+  --warn:#F2B27A; --warn-bg:#3A2716; --ok:#8FD3A8; --ok-bg:#1B3325; --info:#9DBBE3; --info-bg:#1C2837;
+  --out-bg:#0A0C0F; --out-ink:#DDE1E6; --out-dim:#7A8290;
+  --r1:#6FCF97; --r2:#86A8F0; --r3:#F2A861; --r4:#C49AEE; --r5:#F08A8A; --r6:#6FD2D8; --r7:#E0C860; --r8:#E39BBE; --r9:#A8D86A; --r10:#A8B2C4;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;padding-inline:16px;padding-block:20px 48px}
+.wrap{max-width:1360px;margin:0 auto}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:16px}
+h1{font-family:var(--display);font-weight:700;font-size:30px;line-height:1.05;margin:0;letter-spacing:-.02em;text-wrap:balance}
+h1 .br{font-family:var(--mono);font-weight:500;font-size:.62em;color:var(--accent);letter-spacing:0;vertical-align:.18em;margin-left:.2em}
+.sub{color:var(--muted);margin:6px 0 0;max-width:66ch}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+button{font:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px}
+button:hover{border-color:var(--muted)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.drop:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button.ghost{border-color:transparent;background:transparent;color:var(--muted);padding:4px 8px}
+button.ghost:hover{color:var(--ink);background:var(--surface-2)}
+button.add{border-style:dashed;color:var(--muted);background:transparent;width:100%;padding:8px}
+button.add:hover{color:var(--ink)}
+button.armed{background:var(--warn-bg);color:var(--warn);border-color:var(--warn)}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,460px);gap:20px;align-items:start}
+@media (max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}}
+.editor{display:flex;flex-direction:column;gap:14px}
+
+.insertbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-bottom:1px solid var(--line)}
+.insertbar .t{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-right:4px}
+.chip{font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:4px;border:1px solid transparent;line-height:1.6;color:var(--rc);background:color-mix(in srgb,var(--rc) 14%,transparent)}
+button.chip:hover{border-color:var(--rc)}
+.chip small{font-family:var(--sans);opacity:.8;margin-left:4px}
+.hint{font-size:12px;color:var(--muted);margin:0}
+
+section.card{background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.card-head{display:flex;align-items:baseline;gap:10px;padding:12px 14px 10px;flex-wrap:wrap}
+.card-head h2{font-family:var(--display);font-weight:600;font-size:16px;margin:0;letter-spacing:-.005em}
+.card-head .step{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.04em}
+.card-head .desc{color:var(--muted);font-size:12.5px;flex:1 1 240px}
+.card-body{padding:0 14px 14px;display:flex;flex-direction:column;gap:12px}
+
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:500;min-width:0}
+input[type=text],input[type=number],select,textarea{font:inherit;font-size:13.5px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:62px;line-height:1.45}
+.row{display:grid;gap:10px}
+.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:640px){.cols-2,.cols-3{grid-template-columns:minmax(0,1fr)}}
+.inline-check{display:inline-flex;gap:6px;align-items:center;font-size:13px;cursor:pointer;color:var(--ink)}
+.inline-check input{accent-color:var(--accent);margin:0}
+
+.list{display:flex;flex-direction:column;gap:8px}
+.ref{border:1px solid var(--line);border-left:4px solid var(--rc);border-radius:6px;padding:10px;display:grid;grid-template-columns:88px minmax(0,1fr);gap:10px;background:var(--surface)}
+@media (max-width:560px){.ref{grid-template-columns:minmax(0,1fr)}}
+.drop{width:88px;height:88px;border:1px dashed var(--line);border-radius:5px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;color:var(--muted);cursor:pointer;overflow:hidden;background:var(--surface-2);position:relative}
+.drop img{width:100%;height:100%;object-fit:cover;display:block}
+.drop.over{border-color:var(--rc);color:var(--rc)}
+.drop .num{position:absolute;top:4px;left:4px;width:20px;height:20px;border-radius:50%;background:var(--rc);color:var(--surface);font:600 11px/20px var(--mono);text-align:center}
+.ref-fields{display:flex;flex-direction:column;gap:8px;min-width:0}
+.ref-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ref-head .grow{flex:1}
+.ref-line{font-size:12px;color:var(--muted);font-style:italic;margin:0}
+.mode-pill{font-size:12px;padding:2px 9px;border-radius:999px;background:var(--info-bg);color:var(--info);font-weight:500}
+
+.item{border:1px solid var(--line);border-radius:6px;padding:10px;display:grid;gap:8px;background:var(--surface)}
+.item-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.3fr) minmax(0,1fr) auto;gap:8px;align-items:end}
+@media (max-width:640px){.item-grid{grid-template-columns:minmax(0,1fr)}}
+.hexrow{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:end}
+@media (max-width:640px){.hexrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.hexin{display:flex;gap:6px;align-items:center}
+.sw{width:22px;height:22px;border-radius:4px;border:1px solid var(--line);flex:none;background:transparent}
+.presets{display:flex;flex-wrap:wrap;gap:6px}
+.preset{font-size:12.5px;padding:4px 10px;border-radius:999px;background:var(--surface-2)}
+.preset.on{border-color:var(--accent);color:var(--accent);background:var(--surface)}
+
+.out{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;flex-direction:column;gap:12px}
+@media (max-width:1000px){.out{position:static}}
+.out-card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.out-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.out-head h2{font-family:var(--display);font-weight:600;font-size:17px;margin:0}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:none;border-radius:0;padding:5px 10px;font-size:12.5px;background:var(--surface)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+#output{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--out-bg);color:var(--out-ink);border-radius:6px;min-height:260px;max-height:52vh;overflow:auto;padding:12px;white-space:pre-wrap;word-break:break-word;margin:0}
+#output .ir{font-weight:600;color:var(--oc)}
+#output .dim{color:var(--out-dim)}
+.meta{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.meta b{color:var(--ink);font-weight:600}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.checks li{font-size:12.5px;padding:6px 8px;border-radius:5px;display:flex;gap:8px;align-items:flex-start}
+.checks li.warn{background:var(--warn-bg);color:var(--warn)}
+.checks li.ok{background:var(--ok-bg);color:var(--ok)}
+.checks li.info{background:var(--info-bg);color:var(--info)}
+.checks li b{font-weight:600;flex:none}
+#api{font-family:var(--mono);font-size:12px;line-height:1.5;background:var(--surface-2);border-radius:6px;padding:10px;white-space:pre;overflow-x:auto;margin:0;max-height:260px}
+.toast{font-size:12px;color:var(--ok);min-height:1em}
+details summary{cursor:pointer;font-size:13px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>FLUX.2 Prompt Builder <span class="br">[pro·max·flex·klein]</span></h1>
+      <p class="sub">Assemble a FLUX.2 prompt in the order the model weighs it: subject first, then how each reference image is used, then style, context, camera, text and exact colours. Add reference images to get <span class="mono">image 1</span>, <span class="mono">image 2</span>… labels you can drop into any field.</p>
+    </div>
+    <div class="top-actions">
+      <button id="btn-ex-cabin" type="button">Example: synth cabin</button>
+      <button id="btn-ex-swing" type="button">Example: BFL swing</button>
+      <button id="btn-clear" type="button">Clear all</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <div class="editor">
+      <div class="insertbar" id="insertbar"></div>
+
+      <!-- Model & output -->
+      <section class="card">
+        <div class="card-head"><span class="step">SETUP</span><h2>Model and output size</h2><span class="desc">The model sets how many references you can attach. Output size isn't part of the prompt text; it goes in the API or node settings.</span></div>
+        <div class="card-body">
+          <div class="row cols-3">
+            <label class="f">Model
+              <select id="model" data-bind="model">
+                <option value="pro">FLUX.2 [pro]</option>
+                <option value="max">FLUX.2 [max]</option>
+                <option value="flex">FLUX.2 [flex]</option>
+                <option value="klein9">FLUX.2 [klein] 9B</option>
+                <option value="klein4">FLUX.2 [klein] 4B</option>
+                <option value="dev">FLUX.2 [dev] (open weights)</option>
+              </select>
+            </label>
+            <label class="f">Aspect ratio
+              <select id="aspect" data-bind="aspect">
+                <option>1:1</option><option>4:3</option><option>3:4</option><option>3:2</option><option>2:3</option><option>16:9</option><option>9:16</option><option>21:9</option>
+              </select>
+            </label>
+            <label class="f">Output megapixels
+              <select id="mp" data-bind="mp">
+                <option value="0.5">0.5 MP</option><option value="1">1 MP</option><option value="2">2 MP</option><option value="3">3 MP</option><option value="4">4 MP (max)</option>
+              </select>
+            </label>
+          </div>
+          <div class="row cols-3">
+            <label class="f">Seed (optional)
+              <input type="text" id="seed" data-bind="seed" inputmode="numeric" placeholder="42">
+            </label>
+            <label class="f" id="flex-guid">Guidance [flex] (1.5–10)
+              <input type="number" id="guidance" data-bind="guidance" min="1.5" max="10" step="0.5">
+            </label>
+            <label class="f" id="flex-steps">Steps [flex] (max 50)
+              <input type="number" id="steps" data-bind="steps" min="1" max="50" step="1">
+            </label>
+          </div>
+          <label class="inline-check"><input type="checkbox" id="upsample" data-bind-check="upsample"> Prompt upsampling (the API expands your prompt with extra detail)</label>
+        </div>
+      </section>
+
+      <!-- References -->
+      <section class="card">
+        <div class="card-head"><span class="step">INPUTS</span><h2>Reference images</h2><span id="mode-pill" class="mode-pill"></span><span class="desc">Order matters: image 1 is the first input you attach, image 2 the second, and so on. Give each a role and the tool writes a sentence saying how it's used.</span></div>
+        <div class="card-body">
+          <div class="list" id="refs"></div>
+          <button class="add" type="button" id="add-ref">+ Reference image</button>
+          <p class="hint">Thumbnails are optional and stay in this browser tab; they help you keep track of which picture is which number.</p>
+        </div>
+      </section>
+
+      <!-- Subject -->
+      <section class="card">
+        <div class="card-head"><span class="step">1 · SUBJECT + ACTION</span><h2 id="lead-title">Main subject</h2><span class="desc" id="lead-desc">FLUX.2 pays most attention to what comes first, so lead with the main subject and what it's doing.</span></div>
+        <div class="card-body">
+          <label class="f"><span id="lead-label">Lead sentence</span>
+            <textarea id="lead" data-bind="lead" data-ins rows="3"></textarea>
+          </label>
+          <label class="f">Action or pose (optional, if not already in the lead)
+            <input type="text" id="action" data-bind="action" data-ins placeholder="leaning on the railing, looking out to sea">
+          </label>
+        </div>
+      </section>
+
+      <!-- Style -->
+      <section class="card">
+        <div class="card-head"><span class="step">2 · STYLE</span><h2>Style and medium</h2><span class="desc">Name the medium or photographic look. Presets from BFL's style guide append their descriptors.</span></div>
+        <div class="card-body">
+          <div class="presets" id="presets"></div>
+          <label class="f">Style
+            <textarea id="style" data-bind="style" data-ins rows="2" placeholder="professional studio product photography, clean minimalist aesthetic"></textarea>
+          </label>
+        </div>
+      </section>
+
+      <!-- Context -->
+      <section class="card">
+        <div class="card-head"><span class="step">3 · CONTEXT</span><h2>Setting, light and mood</h2><span class="desc">Where it happens and how it feels. Leave anything blank to skip it.</span></div>
+        <div class="card-body">
+          <div class="row cols-2">
+            <label class="f">Setting / background
+              <input type="text" id="setting" data-bind="setting" data-ins placeholder="a secluded beach in the Philippines">
+            </label>
+            <label class="f">Time / season / weather
+              <input type="text" id="time" data-bind="time" data-ins placeholder="hazy late afternoon">
+            </label>
+            <label class="f">Lighting
+              <input type="text" id="lighting" data-bind="lighting" data-ins list="dl-light" placeholder="soft diffused window light">
+            </label>
+            <label class="f">Mood / atmosphere
+              <input type="text" id="mood" data-bind="mood" data-ins placeholder="calm, contemplative">
+            </label>
+          </div>
+          <label class="f">Composition (optional)
+            <input type="text" id="composition" data-bind="composition" data-ins list="dl-comp" placeholder="rule of thirds, subject in the left third">
+          </label>
+        </div>
+      </section>
+
+      <!-- Camera -->
+      <section class="card">
+        <div class="card-head"><span class="step">4 · CAMERA</span><h2>Camera and lens</h2><span class="desc">For photoreal work, "Shot on Fujifilm X-T5, 35mm f/1.4" beats "professional photo".</span></div>
+        <div class="card-body">
+          <div class="row cols-3">
+            <label class="f">Camera / film stock
+              <input type="text" id="cam-body" data-bind="camBody" list="dl-body" placeholder="Hasselblad X2D">
+            </label>
+            <label class="f">Lens
+              <input type="text" id="cam-lens" data-bind="camLens" list="dl-lens" placeholder="80mm lens">
+            </label>
+            <label class="f">Aperture / settings
+              <input type="text" id="cam-ap" data-bind="camAp" list="dl-ap" placeholder="f/2.8">
+            </label>
+            <label class="f">Angle
+              <input type="text" id="cam-angle" data-bind="camAngle" list="dl-angle" placeholder="eye level">
+            </label>
+            <label class="f">Shot size
+              <input type="text" id="cam-dist" data-bind="camDist" list="dl-dist" placeholder="medium shot">
+            </label>
+            <label class="f">Focus
+              <input type="text" id="cam-dof" data-bind="camDof" list="dl-dof" placeholder="shallow depth of field">
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Text -->
+      <section class="card">
+        <div class="card-head"><span class="step">5 · TEXT</span><h2>Text in the image</h2><span class="desc">Each line is quoted exactly. Say where it sits, how big, what lettering and which colour.</span></div>
+        <div class="card-body">
+          <div class="list" id="texts"></div>
+          <button class="add" type="button" id="add-text">+ Text element</button>
+        </div>
+      </section>
+
+      <!-- Colours -->
+      <section class="card">
+        <div class="card-head"><span class="step">6 · COLOUR</span><h2>Exact colours</h2><span class="desc">Tie every hex code to a specific object. Add a second hex to make it a gradient.</span></div>
+        <div class="card-body">
+          <div class="list" id="colors"></div>
+          <button class="add" type="button" id="add-color">+ Colour</button>
+        </div>
+      </section>
+
+      <!-- Preserve -->
+      <section class="card">
+        <div class="card-head"><span class="step">7 · PRESERVE + DETAILS</span><h2>What stays, and the finishing details</h2><span class="desc">For edits, say plainly what must not change. Secondary details go last because they carry the least weight.</span></div>
+        <div class="card-body">
+          <label class="f">Keep unchanged
+            <input type="text" id="keep" data-bind="keep" data-ins placeholder="her pose, the lighting and the overall composition of image 1">
+          </label>
+          <label class="inline-check"><input type="checkbox" id="nothing-else" data-bind-check="nothingElse"> End with "Change nothing else."</label>
+          <label class="f">Secondary details
+            <textarea id="details" data-bind="details" data-ins rows="2" placeholder="steam curling from a mug in the foreground, dust motes in the light"></textarea>
+          </label>
+        </div>
+      </section>
+    </div>
+
+    <aside class="out">
+      <div class="out-card">
+        <div class="out-head">
+          <h2>Prompt</h2>
+          <div class="seg" role="group" aria-label="Prompt format">
+            <button type="button" id="fmt-nl" aria-pressed="true">Natural language</button>
+            <button type="button" id="fmt-json" aria-pressed="false">JSON</button>
+          </div>
+        </div>
+        <pre id="output" tabindex="0" aria-label="Generated prompt"></pre>
+        <div class="out-head">
+          <div class="meta"><span id="m-words"></span><span id="m-band"></span><span id="m-refs"></span></div>
+          <button class="primary" type="button" id="btn-copy">Copy prompt</button>
+        </div>
+        <div class="toast" id="toast" aria-live="polite"></div>
+      </div>
+      <div class="out-card">
+        <div class="out-head"><h2>Checks</h2></div>
+        <ul class="checks" id="checks"></ul>
+      </div>
+      <div class="out-card">
+        <div class="out-head"><h2>Request settings</h2><button class="ghost" type="button" id="btn-copy-api">Copy</button></div>
+        <div class="meta" id="dims"></div>
+        <pre id="api"></pre>
+        <p class="hint">Body for BFL's API. In ComfyUI, feed references in the same order so "image 1" matches the first one.</p>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<datalist id="dl-light"><option>soft diffused window light</option><option>golden hour sunlight</option><option>direct on-camera flash, high exposure</option><option>three-point softbox setup, soft diffused highlights</option><option>dramatic rim lighting</option><option>overcast natural light</option><option>neon signage glow</option><option>dappled forest light</option><option>harsh midday sun with hard shadows</option></datalist>
+<datalist id="dl-comp"><option>rule of thirds</option><option>centred, symmetrical composition</option><option>subject small in a vast frame, lots of negative space</option><option>tight crop, filling the frame</option><option>leading lines toward the subject</option><option>flat lay, top-down</option></datalist>
+<datalist id="dl-body"><option>Hasselblad X2D</option><option>Sony A7IV</option><option>Canon 5D Mark IV</option><option>Fujifilm X-T5</option><option>Leica M11</option><option>Contax T2</option><option>early digital camera</option><option>Kodak Portra 400</option><option>Kodak Ektachrome 64</option><option>Ilford HP5 black-and-white film</option><option>Cinestill 800T</option></datalist>
+<datalist id="dl-lens"><option>24mm wide-angle lens</option><option>35mm lens</option><option>50mm lens</option><option>80mm lens</option><option>85mm portrait lens</option><option>100mm macro lens</option><option>24-70mm at 35mm</option><option>200mm telephoto lens</option></datalist>
+<datalist id="dl-ap"><option>f/1.4</option><option>f/2.8</option><option>f/5.6</option><option>f/8</option><option>f/11</option><option>f/5.6, ISO 200</option><option>1/125 shutter</option></datalist>
+<datalist id="dl-angle"><option>eye level</option><option>low angle</option><option>high angle</option><option>overhead, top-down</option><option>Dutch angle</option><option>over-the-shoulder</option></datalist>
+<datalist id="dl-dist"><option>extreme close-up</option><option>close-up</option><option>medium shot</option><option>full-length shot</option><option>wide shot</option><option>aerial view</option></datalist>
+<datalist id="dl-dof"><option>shallow depth of field</option><option>sharp focus throughout</option><option>deep focus</option><option>soft focus</option><option>sharp focus on the subject, background softly blurred</option></datalist>
+
+<script>
+(function(){
+"use strict";
+var KEY = "flux2-prompt-builder-v1";
+var MODELS = {
+  pro:   {name:"FLUX.2 [pro]", cap:8, mpRule:true, endpoint:"/v1/flux-2-pro"},
+  max:   {name:"FLUX.2 [max]", cap:8, mpRule:true, endpoint:"/v1/flux-2-max", assumed:true},
+  flex:  {name:"FLUX.2 [flex]", cap:10, mpRule:false, endpoint:"/v1/flux-2-flex"},
+  klein9:{name:"FLUX.2 [klein] 9B", cap:4, mpRule:false, endpoint:"/v1/flux-2-klein-9b"},
+  klein4:{name:"FLUX.2 [klein] 4B", cap:4, mpRule:false, endpoint:"/v1/flux-2-klein-4b"},
+  dev:   {name:"FLUX.2 [dev]", cap:6, mpRule:false, endpoint:null, approx:true}
+};
+var ROLES = [
+  ["subject","Main subject / character"],
+  ["object","Object or product to include"],
+  ["clothing","Clothing or accessory"],
+  ["background","Background / setting"],
+  ["base","Base image to edit"],
+  ["style","Style reference"],
+  ["material","Material, texture or pattern"],
+  ["logo","Logo or graphic"],
+  ["pose","Pose reference"],
+  ["layout","Composition / layout"],
+  ["palette","Colour palette"],
+  ["lighting","Lighting reference"],
+  ["custom","Custom (write it myself)"]
+];
+var PRESETS = [
+  ["Modern digital","shot on Sony A7IV, clean sharp, high dynamic range"],
+  ["2000s digicam","early digital camera, slight noise, flash photography, candid, 2000s digicam style"],
+  ["80s vintage","film grain, warm color cast, soft focus, 80s vintage photo"],
+  ["Analog film","shot on Kodak Portra 400, natural grain, organic colors"],
+  ["Studio product","ultra-realistic professional studio product photography, commercial quality"],
+  ["Editorial raw","editorial raw portrait, cinematic harsh flash lighting, intimate documentary style"],
+  ["Anime","bright anime style"],
+  ["Woodblock print","vintage Japanese woodblock print style with soft pastel tones"],
+  ["Oil painting","oil painting with thick, textured brushstrokes"],
+  ["Impasto","impasto painting, thick textured brushstrokes, bold color layers"],
+  ["Superhero comic","classic superhero comic with dynamic action lines"],
+  ["Retro poster","bold vintage poster aesthetic, 70s typography"]
+];
+var uid = 0; function nid(){ uid++; return "i"+Date.now().toString(36)+uid; }
+
+function blank(){
+  return {model:"pro",aspect:"4:3",mp:"1",seed:"",guidance:"",steps:"",upsample:false,format:"nl",
+    refs:[],lead:"",action:"",style:"",setting:"",time:"",lighting:"",mood:"",composition:"",
+    camBody:"",camLens:"",camAp:"",camAngle:"",camDist:"",camDof:"",texts:[],colors:[],keep:"",nothingElse:false,details:""};
+}
+function exCabin(){
+  var s = blank();
+  s.refs = [
+    {id:nid(),label:"modular synthesizer",role:"object",detail:"on the desk, patch cables draped across the panels",keep:"the exact module layout, knobs and panel lettering",target:"",auto:true},
+    {id:nid(),label:"cabin interior",role:"background",detail:"with the large window on the left",keep:"",target:"",auto:true},
+    {id:nid(),label:"",role:"style",detail:"",keep:"",target:"",auto:true}
+  ];
+  s.lead = "A modular synthesizer glowing on a worn wooden desk in a remote Icelandic cabin at night, green aurora rippling across the sky through the window";
+  s.style = "analog film photograph, natural grain, organic colors";
+  s.time = "a clear winter night";
+  s.lighting = "warm tungsten desk lamp mixed with cool aurora light";
+  s.mood = "quiet, contemplative";
+  s.camBody = "Fujifilm X-T5"; s.camLens = "35mm lens"; s.camAp = "f/1.4"; s.camAngle = "eye level"; s.camDist = "medium shot"; s.camDof = "shallow depth of field";
+  s.texts = [{id:nid(),text:"LJÓMI",placement:"on a small paper label taped to the synth case",style:"handwritten marker",size:"small",color:""}];
+  s.colors = [{id:nid(),target:"aurora",hex:"#4BE08A",hex2:"#2A9DF4"}];
+  return s;
+}
+function exSwing(){
+  var s = blank();
+  s.aspect = "3:4";
+  s.refs = [
+    {id:nid(),label:"swing",role:"object",detail:"",keep:"",target:"",auto:false},
+    {id:nid(),label:"woman",role:"subject",detail:"",keep:"",target:"",auto:false},
+    {id:nid(),label:"cat",role:"object",detail:"",keep:"",target:"",auto:false},
+    {id:nid(),label:"",role:"style",detail:"",keep:"",target:"",auto:false}
+  ];
+  s.lead = "A photograph of the woman in image 2 sitting on the swing in image 1 and the cat from image 3 sitting on her lap, all in the style of image 4";
+  return s;
+}
+
+var S = load() || exCabin();
+var thumbs = {};
+var lastField = null;
+
+function load(){ try{ var r = localStorage.getItem(KEY); if(!r) return null; var o = JSON.parse(r); var b = blank(); for(var k in b){ if(!(k in o)) o[k]=b[k]; } return o; }catch(e){ return null; } }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+
+var $ = function(id){ return document.getElementById(id); };
+function esc(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function trim(t){ return (t||"").trim(); }
+function stripEnd(t){ return trim(t).replace(/[.,;:\s]+$/,""); }
+function sentence(t){ t = stripEnd(t); if(!t) return ""; return t.charAt(0).toUpperCase()+t.slice(1)+"."; }
+function rc(i){ return "var(--r"+((i%10)+1)+")"; }
+function oc(i){ return "var(--o"+((i%10)+1)+")"; }
+function validHex(h){ return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(trim(h)); }
+function normHex(h){ h = trim(h); if(h && h[0] !== "#") h = "#"+h; return h.toUpperCase(); }
+
+/* ---------- reference role sentences ---------- */
+function roleSentence(r, n){
+  var img = "image "+n, L = trim(r.label), d = stripEnd(r.detail), k = stripEnd(r.keep), t = stripEnd(r.target);
+  var s = "";
+  switch(r.role){
+    case "subject":  s = "Use the "+(L||"subject")+" from "+img+" as the main subject"; if(!k) k = "the same face, features and proportions"; break;
+    case "object":   s = "Include the "+(L||"object")+" from "+img; break;
+    case "clothing": s = "Dress "+(t||"the subject")+" in the "+(L||"outfit")+" from "+img; break;
+    case "background": s = "Use the "+(L||"scene")+" from "+img+" as the setting and background"; break;
+    case "base":     s = "Start from "+img+(L?" ("+L+")":"")+" as the base image"; break;
+    case "style":    s = "Render the entire image in the style of "+img+(L?" ("+L+")":""); break;
+    case "material": s = "Apply the "+(L||"material, texture and pattern")+" from "+img+" to "+(t||"the main subject"); break;
+    case "logo":     s = "Place the "+(L||"logo")+" from "+img; if(!d) d = "on the main subject"; break;
+    case "pose":     s = "Match the pose and body position shown in "+img; break;
+    case "layout":   s = "Follow the composition and spatial layout of "+img; break;
+    case "palette":  s = "Use the colour palette of "+img; break;
+    case "lighting": s = "Match the lighting of "+img; break;
+    case "custom":   s = d ? d : ""; d = ""; break;
+  }
+  if(!s) return "";
+  if(d) s += (/^[,;]/.test(d) ? "" : (/^(background|base|style|pose|layout|palette|lighting)$/.test(r.role) ? ", " : " ")) + d;
+  if(k) s += ", keeping "+k;
+  return sentence(s);
+}
+
+/* ---------- natural language assembly ---------- */
+function styleText(){ return stripEnd(S.style); }
+function contextSentence(){
+  var bits = [];
+  if(trim(S.setting)) bits.push(stripEnd(S.setting));
+  if(trim(S.time)) bits.push(stripEnd(S.time));
+  if(trim(S.lighting)) bits.push(stripEnd(S.lighting));
+  if(trim(S.mood)){ var m = stripEnd(S.mood); bits.push(/mood|atmosphere|vibe|feel/i.test(m) ? m : m+" mood"); }
+  return bits.length ? sentence(bits.join(", ")) : "";
+}
+function cameraSentence(){
+  var body = stripEnd(S.camBody);
+  var rest = [S.camLens,S.camAp,S.camAngle,S.camDist,S.camDof].map(stripEnd).filter(Boolean);
+  if(!body && !rest.length) return "";
+  if(body){
+    var isStock = /portra|ektachrome|ilford|cinestill|film|kodak|fuji(?!film x)/i.test(body) && !/camera|x-t|x2d|a7|5d|leica|contax/i.test(body);
+    return sentence((isStock?"Shot on ":"Shot on ")+[body].concat(rest).join(", "));
+  }
+  return sentence(rest.join(", "));
+}
+function textSentence(t){
+  var txt = trim(t.text); if(!txt) return "";
+  txt = txt.replace(/^["'“‘]|["'”’]$/g,"");
+  var s = 'The text "'+txt+'"';
+  var look = [stripEnd(t.size), stripEnd(t.style)].filter(Boolean).join(" ");
+  if(look) s += " in "+look+(/letter|type|font|script|lettering|serif|marker/i.test(look)?"":" lettering");
+  if(trim(t.color)) s += ", color "+normHex(t.color);
+  if(trim(t.placement)) s += ", "+stripEnd(t.placement);
+  return sentence(s);
+}
+function colorSentence(c){
+  var tg = stripEnd(c.target); if(!tg || !trim(c.hex)) return "";
+  var art = /^(the|a|an|her|his|their|its)\b/i.test(tg) ? "" : "the ";
+  if(trim(c.hex2)) return sentence(art+tg+" is a gradient, starting with color "+normHex(c.hex)+" and finishing with color "+normHex(c.hex2));
+  return sentence(art+tg+" is color "+normHex(c.hex));
+}
+function buildNL(){
+  var parts = [];
+  if(trim(S.lead)) parts.push(sentence(S.lead));
+  if(trim(S.action)) parts.push(sentence(S.action));
+  S.refs.forEach(function(r,i){ if(r.auto){ var s = roleSentence(r,i+1); if(s) parts.push(s); } });
+  if(styleText()) parts.push(sentence(styleText()));
+  var cx = contextSentence(); if(cx) parts.push(cx);
+  if(trim(S.composition)) parts.push(sentence(S.composition));
+  var cam = cameraSentence(); if(cam) parts.push(cam);
+  S.texts.forEach(function(t){ var s = textSentence(t); if(s) parts.push(s); });
+  S.colors.forEach(function(c){ var s = colorSentence(c); if(s) parts.push(s); });
+  if(trim(S.details)) parts.push(sentence(S.details));
+  if(trim(S.keep)) parts.push(sentence("Keep "+stripEnd(S.keep).replace(/^keep\s+/i,"")+" unchanged"));
+  if(S.nothingElse) parts.push("Change nothing else.");
+  return parts.join(" ");
+}
+
+/* ---------- JSON assembly ---------- */
+function buildJSON(){
+  var o = {};
+  var scene = [stripEnd(S.lead), stripEnd(S.action)].filter(Boolean).join(", ");
+  if(scene) o.scene = scene;
+  var subjects = [], style = [], palette = [], lighting = [], comp = [], bg = [];
+  S.refs.forEach(function(r,i){
+    if(!r.auto) return;
+    var s = roleSentence(r,i+1).replace(/\.$/,""); if(!s) return;
+    if(r.role==="style") style.push(s);
+    else if(r.role==="palette") palette.push(s);
+    else if(r.role==="lighting") lighting.push(s);
+    else if(r.role==="pose"||r.role==="layout") comp.push(s);
+    else if(r.role==="background") bg.push(s);
+    else subjects.push({reference:"image "+(i+1), description:s});
+  });
+  S.colors.forEach(function(c){
+    if(!stripEnd(c.target) || !trim(c.hex)) return;
+    var d = stripEnd(c.target)+", strictly in color "+normHex(c.hex)+(trim(c.hex2)?" fading to color "+normHex(c.hex2):"");
+    subjects.push({description:d, color_match:"exact"});
+    palette.push(normHex(c.hex)); if(trim(c.hex2)) palette.push(normHex(c.hex2));
+  });
+  if(subjects.length) o.subjects = subjects;
+  if(styleText()) style.push(styleText());
+  if(style.length) o.style = style.join("; ");
+  if(palette.length) o.color_palette = palette;
+  var li = [stripEnd(S.lighting), stripEnd(S.time)].filter(Boolean).concat(lighting);
+  if(li.length) o.lighting = li.join("; ");
+  if(trim(S.mood)) o.mood = stripEnd(S.mood);
+  var b = [stripEnd(S.setting)].filter(Boolean).concat(bg);
+  if(b.length) o.background = b.join("; ");
+  var c = [stripEnd(S.composition)].filter(Boolean).concat(comp);
+  if(c.length) o.composition = c.join("; ");
+  var cam = {};
+  if(trim(S.camAngle)) cam.angle = stripEnd(S.camAngle);
+  if(trim(S.camDist)) cam.distance = stripEnd(S.camDist);
+  var lens = [stripEnd(S.camBody), stripEnd(S.camLens)].filter(Boolean).join(", ");
+  if(lens) cam.lens = lens;
+  if(trim(S.camAp)) cam["f-number"] = stripEnd(S.camAp);
+  if(trim(S.camDof)) cam.depth_of_field = stripEnd(S.camDof);
+  if(Object.keys(cam).length) o.camera = cam;
+  var tx = S.texts.filter(function(t){return trim(t.text);}).map(function(t){
+    var e = {content: trim(t.text).replace(/^["'“‘]|["'”’]$/g,"")};
+    if(trim(t.placement)) e.placement = stripEnd(t.placement);
+    if(trim(t.size)) e.size = stripEnd(t.size);
+    if(trim(t.style)) e.style = stripEnd(t.style);
+    if(trim(t.color)) e.color = normHex(t.color);
+    return e;
+  });
+  if(tx.length) o.text = tx;
+  if(trim(S.details)) o.details = stripEnd(S.details);
+  var keep = [];
+  if(trim(S.keep)) keep.push("Keep "+stripEnd(S.keep).replace(/^keep\s+/i,"")+" unchanged");
+  if(S.nothingElse) keep.push("Change nothing else");
+  if(keep.length) o.preserve = keep.join(". ");
+  return JSON.stringify(o, null, 2);
+}
+
+/* Remove mentions of images that aren't attached (e.g. all references removed) */
+function stripDangling(t){
+  var n = S.refs.length;
+  var gone = function(k){ k = +k; return k < 1 || k > n; };
+  t = t.replace(/,?[ ]*(?:all[ ]+)?in the style of image[ ]+(\d+)/gi, function(m,k){ return gone(k) ? "" : m; });
+  t = t.replace(/[ ]*\b(?:as shown in|shown in|seen in|from|in|of|on)[ ]+image[ ]+(\d+)\b/gi, function(m,k){ return gone(k) ? "" : m; });
+  t = t.replace(/[ ]*\bimage[ ]+(\d+)\b/gi, function(m,k){ return gone(k) ? "" : m; });
+  return t.replace(/\([ ]*\)/g,"").replace(/[ ]{2,}/g," ").replace(/[ ]+([,.;])/g,"$1").replace(/,([.;])/g,"$1").replace(/,{2,}/g,",");
+}
+function build(){ return stripDangling(S.format==="json" ? buildJSON() : buildNL()); }
+
+/* ---------- dimensions ---------- */
+function dims(){
+  var p = S.aspect.split(":").map(Number), ar = p[0]/p[1], px = parseFloat(S.mp)*1e6;
+  var w = Math.sqrt(px*ar), h = w/ar;
+  w = Math.max(64, Math.round(w/16)*16); h = Math.max(64, Math.round(h/16)*16);
+  while(w*h > 4194304){ if(w>=h) w-=16; else h-=16; }
+  return {w:w,h:h,mp:(w*h/1e6)};
+}
+function refLimit(){
+  var m = MODELS[S.model]; var cap = m.cap;
+  if(m.mpRule){ var out = Math.max(1, Math.ceil(parseFloat(S.mp)-0.001)); cap = Math.min(cap, Math.max(0, 9-out)); }
+  return cap;
+}
+
+/* ---------- checks ---------- */
+function mentioned(text){
+  var set = {}, re = /\bimage\s+(\d+)\b/gi, m;
+  while((m = re.exec(text))) set[m[1]] = true;
+  return set;
+}
+function checks(prompt){
+  var out = [];
+  var words = wordCount(prompt);
+  var n = S.refs.length, lim = refLimit(), m = MODELS[S.model];
+  if(!trim(S.lead)) out.push(["warn","Lead","Start with the main subject. FLUX.2 weights the first words most."]);
+  else if(!trim(S.lead).match(/\w+\s+\w+/)) out.push(["info","Lead","A one-word lead is fine for quick exploration, but a subject plus action usually reads better."]);
+  if(n > lim){
+    out.push(["warn","References",n+" images attached; "+m.name+" allows "+lim+(m.mpRule?" at "+S.mp+" MP output (9 MP total for inputs + output)":"")+"."]);
+  } else if(n){
+    out.push(["ok","References",n+" of "+lim+" allowed for "+m.name+(m.approx?" (approximate)":"")+(m.assumed?" (assumed same as [pro])":"")+"."]);
+  }
+  var free = [S.lead,S.action,S.style,S.setting,S.time,S.lighting,S.mood,S.composition,S.keep,S.details].concat(S.refs.map(function(r){return r.detail+" "+r.keep+" "+r.target;})).join(" \n ");
+  var ment = mentioned(free);
+  Object.keys(ment).forEach(function(k){ if(+k > n || +k < 1) out.push(["info","image "+k,"is in your text but "+(n?"only "+n+" reference"+(n===1?" is":"s are"):"no references are")+" attached, so it's left out of the prompt. Reword that sentence if it no longer reads well."]); });
+  var allText = mentioned(prompt);
+  S.refs.forEach(function(r,i){
+    var k = String(i+1);
+    if(!allText[k] && n>1) out.push(["warn","image "+k,"is attached but the prompt never says how to use it. Give it a role line or mention it in the lead."]);
+    if(r.auto && ment[k] && r.role!=="custom") out.push(["info","image "+k,"appears in your text and in its role line. Fine if they agree; switch the role line off if they conflict."]);
+    if(r.role==="custom" && r.auto && !trim(r.detail)) out.push(["warn","image "+k,"is set to Custom but the sentence is empty."]);
+  });
+  if(n===1 && !allText["1"]) out.push(["info","Single edit","With one input, plain edits like \"Change it to night\" work without naming image 1."]);
+  var neg = prompt.match(/\b(no|not|don't|do not|never|avoid|without)\s+[a-z]+/gi);
+  if(neg){ out.push(["warn","Negatives","FLUX.2 has no negative prompts. Rephrase as what you want: "+neg.slice(0,3).map(function(x){return "\""+x+"\"";}).join(", ")+(neg.length>3?"…":"")+". (\"without X\" in an edit is sometimes fine.)"]); }
+  var vague = prompt.match(/\b(make it better|improve|more professional|fix the image|enhance|high quality|masterpiece|best quality|8k)\b/gi);
+  if(vague) out.push(["warn","Vague","Name the specific change instead of: "+vague.slice(0,3).map(function(x){return "\""+x+"\"";}).join(", ")+"."]);
+  S.colors.forEach(function(c){
+    if(trim(c.hex) && !validHex(normHex(c.hex))) out.push(["warn","Colour",normHex(c.hex)+" isn't a valid hex code."]);
+    if(trim(c.hex2) && !validHex(normHex(c.hex2))) out.push(["warn","Colour",normHex(c.hex2)+" isn't a valid hex code."]);
+    if(trim(c.hex) && !trim(c.target)) out.push(["warn","Colour",normHex(c.hex)+" isn't tied to an object. Hex codes work best attached to something specific."]);
+  });
+  S.texts.forEach(function(t){
+    if(trim(t.color) && !validHex(normHex(t.color))) out.push(["warn","Text colour",normHex(t.color)+" isn't a valid hex code."]);
+    if(trim(t.text) && !trim(t.placement)) out.push(["info","Text","Say where \""+trim(t.text).slice(0,24)+"\" sits in the frame."]);
+  });
+  if(words > 0){
+    if(words < 10) out.push(["info","Length",words+" words. Short prompts suit quick exploration; turn on prompt upsampling for richer results."]);
+    else if(words <= 80) out.push(["ok","Length",words+" words, in the 30–80 range BFL suggests for most work."]);
+    else out.push(["info","Length",words+" words. Long prompts suit complex scenes; check the important parts are near the start."]);
+  }
+  var d = dims();
+  if(d.mp > 2.05) out.push(["info","Size",d.w+"×"+d.h+" is above the 2 MP BFL recommends for most uses."]);
+  if(S.model==="dev") out.push(["info","[dev]","Open weights, so run it locally or in ComfyUI. Reference limit is about 6 and depends on VRAM."]);
+  if((S.model==="klein4"||S.model==="klein9") && n>4) out.push(["warn","[klein]","Supports up to 4 references."]);
+  if(!out.some(function(x){return x[0]==="warn";})) out.unshift(["ok","Ready","No problems found."]);
+  return out;
+}
+function wordCount(t){ var m = t.replace(/[{}\[\]":,]/g," ").match(/\S+/g); return m ? m.length : 0; }
+
+/* ---------- rendering ---------- */
+function renderOutput(){
+  var p = build();
+  var html = esc(p).replace(/\bimage\s+(\d+)\b/gi, function(all, k){ var i = +k-1; return '<span class="ir" style="--oc:'+(i>=0&&i<S.refs.length?(isDark()?oc(i):rc(i)):"inherit")+'">'+all+'</span>'; });
+  if(S.format==="json") html = html.replace(/(&quot;[a-z_\-]+&quot;)(:)/gi,'<span class="dim">$1</span>$2');
+  $("output").innerHTML = html || '<span class="dim">Start with the lead sentence…</span>';
+  var w = wordCount(p);
+  $("m-words").innerHTML = "<b>"+w+"</b> words";
+  $("m-band").textContent = w===0 ? "" : w<30 ? "short (10–30)" : w<=80 ? "medium (30–80)" : "long (80+)";
+  $("m-refs").textContent = S.refs.length ? S.refs.length+" ref"+(S.refs.length>1?"s":"") : "text-to-image";
+  var ul = $("checks"); ul.innerHTML = "";
+  checks(p).forEach(function(c){ var li = document.createElement("li"); li.className = c[0]; li.innerHTML = "<b>"+esc(c[1])+"</b><span>"+esc(c[2])+"</span>"; ul.appendChild(li); });
+  renderApi(p);
+}
+function isDark(){ var el = document.documentElement; var t = el.getAttribute("data-theme"); if(t) return t==="dark"; return window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches; }
+function renderApi(p){
+  var d = dims(), m = MODELS[S.model];
+  $("dims").innerHTML = "<span><b>"+d.w+" × "+d.h+"</b> px</span><span>"+d.mp.toFixed(2)+" MP</span><span>"+S.aspect+"</span><span>"+(m.endpoint?"POST "+m.endpoint:"local / ComfyUI")+"</span>";
+  var body = {prompt: S.format==="json" ? "<the JSON above, as a string>" : (p.length>90 ? p.slice(0,87)+"…" : p)};
+  S.refs.forEach(function(r,i){ body[i===0?"input_image":"input_image_"+(i+1)] = "<image "+(i+1)+(trim(r.label)?": "+trim(r.label):"")+", URL or base64>"; });
+  body.width = d.w; body.height = d.h;
+  if(trim(S.seed)) body.seed = parseInt(S.seed,10) || S.seed;
+  if(S.upsample) body.prompt_upsampling = true;
+  if(S.model==="flex"){ if(trim(String(S.guidance))) body.guidance = parseFloat(S.guidance); if(trim(String(S.steps))) body.steps = parseInt(S.steps,10); }
+  body.output_format = "png";
+  $("api").textContent = JSON.stringify(body,null,2);
+  $("flex-guid").hidden = $("flex-steps").hidden = S.model!=="flex";
+}
+function renderInsertbar(){
+  var bar = $("insertbar"); bar.innerHTML = "";
+  var t = document.createElement("span"); t.className = "t"; t.textContent = "Insert"; bar.appendChild(t);
+  if(!S.refs.length){ var h = document.createElement("span"); h.className = "hint"; h.textContent = "Add a reference image to get image 1, image 2… labels here."; bar.appendChild(h); return; }
+  S.refs.forEach(function(r,i){
+    var b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.style.setProperty("--rc", rc(i));
+    b.innerHTML = "image "+(i+1)+(trim(r.label)?"<small>"+esc(trim(r.label))+"</small>":"");
+    b.title = "Insert “image "+(i+1)+"” at the cursor";
+    b.addEventListener("mousedown", function(e){ e.preventDefault(); });
+    b.addEventListener("click", function(){ insertAtCursor("image "+(i+1)); });
+    bar.appendChild(b);
+  });
+  var h2 = document.createElement("span"); h2.className = "hint"; h2.textContent = "Click to drop the label into the field you were typing in.";
+  bar.appendChild(h2);
+}
+function insertAtCursor(txt){
+  var el = lastField && document.body.contains(lastField) ? lastField : $("lead");
+  var s = el.selectionStart != null ? el.selectionStart : el.value.length, e = el.selectionEnd != null ? el.selectionEnd : s;
+  var before = el.value.slice(0,s), after = el.value.slice(e);
+  var pre = before && !/\s$/.test(before) ? " " : "", post = after && !/^[\s,.;]/.test(after) ? " " : "";
+  el.value = before+pre+txt+post+after;
+  var pos = (before+pre+txt).length; el.focus(); try{ el.setSelectionRange(pos,pos); }catch(_){}
+  el.dispatchEvent(new Event("input",{bubbles:true}));
+}
+function updateLeadCopy(){
+  var n = S.refs.length;
+  $("mode-pill").textContent = n===0 ? "Text to image" : n===1 ? "Single-reference edit" : "Multi-reference ("+n+")";
+  if(n===1){
+    $("lead-title").textContent = "Edit instruction";
+    $("lead-desc").textContent = "Say exactly what changes. Be specific: \"Replace the flower with a slice of lemon\", not \"make it better\".";
+    $("lead").placeholder = "Replace the background with a warm, cosy home environment";
+  } else if(n>1){
+    $("lead-title").textContent = "Main subject";
+    $("lead-desc").textContent = "Describe the finished image and point at references by number, or leave that to the role lines. Most important elements first.";
+    $("lead").placeholder = "A photograph of the woman in image 2 sitting on the swing in image 1…";
+  } else {
+    $("lead-title").textContent = "Main subject";
+    $("lead-desc").textContent = "FLUX.2 pays most attention to what comes first, so lead with the main subject and what it's doing.";
+    $("lead").placeholder = "Black cat hiding behind a watermelon slice";
+  }
+}
+
+function renderRefs(){
+  var box = $("refs"); box.innerHTML = "";
+  S.refs.forEach(function(r,i){
+    var el = document.createElement("div"); el.className = "ref"; el.style.setProperty("--rc", rc(i));
+    var opts = ROLES.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===r.role?" selected":"")+'>'+o[1]+'</option>'; }).join("");
+    var needsTarget = r.role==="clothing"||r.role==="material";
+    el.innerHTML =
+      '<div class="drop" tabindex="0" role="button" aria-label="Add thumbnail for image '+(i+1)+'"><span class="num">'+(i+1)+'</span>'+(thumbs[r.id]?'<img alt="">':'<span>Drop or click<br>to preview</span>')+'</div>'+
+      '<div class="ref-fields">'+
+        '<div class="ref-head"><span class="chip" style="--rc:'+rc(i)+'">image '+(i+1)+'</span>'+
+          '<label class="inline-check"><input type="checkbox" data-k="auto" id="ra-'+r.id+'"'+(r.auto?" checked":"")+'> Write role line</label><span class="grow"></span>'+
+          '<button type="button" class="ghost" data-act="up" aria-label="Move up"'+(i===0?" disabled":"")+'>↑</button>'+
+          '<button type="button" class="ghost" data-act="down" aria-label="Move down"'+(i===S.refs.length-1?" disabled":"")+'>↓</button>'+
+          '<button type="button" class="ghost" data-act="del" aria-label="Remove">Remove</button></div>'+
+        '<div class="row cols-2">'+
+          '<label class="f">What it shows<input type="text" data-k="label" id="rl-'+r.id+'" value="'+esc(r.label)+'" placeholder="the woman, the swing, the cabin…"></label>'+
+          '<label class="f">Role<select data-k="role" id="rr-'+r.id+'">'+opts+'</select></label>'+
+        '</div>'+
+        (needsTarget?'<label class="f">Apply to<input type="text" data-k="target" data-ins id="rt-'+r.id+'" value="'+esc(r.target)+'" placeholder="the woman in image 1"></label>':'')+
+        '<div class="row cols-2">'+
+          '<label class="f">'+(r.role==="custom"?"Sentence (mention image "+(i+1)+")":"Placement / extra detail")+'<input type="text" data-k="detail" data-ins id="rd-'+r.id+'" value="'+esc(r.detail)+'" placeholder="'+(r.role==="custom"?"Engrave the logo from image "+(i+1)+" into the tree trunk":"seated at the table, matching scale and perspective")+'"></label>'+
+          '<label class="f">Keep<input type="text" data-k="keep" data-ins id="rk-'+r.id+'" value="'+esc(r.keep)+'" placeholder="its exact shape, colours and labels"></label>'+
+        '</div>'+
+        '<p class="ref-line"></p>'+
+      '</div>';
+    if(thumbs[r.id]) el.querySelector(".drop img").src = thumbs[r.id];
+    el.querySelectorAll("[data-k]").forEach(function(inp){
+      var k = inp.getAttribute("data-k");
+      var ev = inp.type==="checkbox"||inp.tagName==="SELECT" ? "change" : "input";
+      inp.addEventListener(ev, function(){
+        r[k] = inp.type==="checkbox" ? inp.checked : inp.value;
+        if(k==="role"){ renderRefs(); }
+        else { updateRefLine(el, r, i); }
+        if(k==="label") renderInsertbar();
+        changed();
+      });
+      if(inp.hasAttribute("data-ins")) inp.addEventListener("focus", function(){ lastField = inp; });
+    });
+    el.querySelectorAll("[data-act]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var a = b.getAttribute("data-act");
+        if(a==="del"){ S.refs.splice(i,1); delete thumbs[r.id]; }
+        if(a==="up" && i>0){ S.refs.splice(i-1,0,S.refs.splice(i,1)[0]); }
+        if(a==="down" && i<S.refs.length-1){ S.refs.splice(i+1,0,S.refs.splice(i,1)[0]); }
+        refsChanged();
+      });
+    });
+    var drop = el.querySelector(".drop");
+    var pick = function(){ var f = document.createElement("input"); f.type = "file"; f.accept = "image/*"; f.onchange = function(){ if(f.files[0]) readThumb(r, f.files[0]); }; f.click(); };
+    drop.addEventListener("click", pick);
+    drop.addEventListener("keydown", function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); pick(); } });
+    drop.addEventListener("dragover", function(e){ e.preventDefault(); drop.classList.add("over"); });
+    drop.addEventListener("dragleave", function(){ drop.classList.remove("over"); });
+    drop.addEventListener("drop", function(e){ e.preventDefault(); drop.classList.remove("over"); var f = e.dataTransfer.files[0]; if(f && /^image\//.test(f.type)) readThumb(r, f); });
+    updateRefLine(el, r, i);
+    box.appendChild(el);
+  });
+  $("add-ref").disabled = S.refs.length >= 10;
+}
+function updateRefLine(el, r, i){
+  var line = el.querySelector(".ref-line");
+  line.textContent = r.auto ? (roleSentence(r,i+1) || "(nothing to write yet)") : "Role line off. Mention image "+(i+1)+" in your own text.";
+}
+function readThumb(r, file){
+  var fr = new FileReader();
+  fr.onload = function(){ thumbs[r.id] = fr.result; renderRefs(); };
+  fr.readAsDataURL(file);
+}
+function refsChanged(){ renderRefs(); renderInsertbar(); updateLeadCopy(); changed(); }
+
+function renderTexts(){
+  var box = $("texts"); box.innerHTML = "";
+  S.texts.forEach(function(t,i){
+    var el = document.createElement("div"); el.className = "item";
+    el.innerHTML =
+      '<div class="item-grid">'+
+        '<label class="f">Exact text<input type="text" data-k="text" id="tt-'+t.id+'" value="'+esc(t.text)+'" placeholder="OPEN"></label>'+
+        '<label class="f">Lettering style<input type="text" data-k="style" id="ts-'+t.id+'" value="'+esc(t.style)+'" list="dl-type" placeholder="red neon letters"></label>'+
+        '<label class="f">Size<input type="text" data-k="size" id="tz-'+t.id+'" value="'+esc(t.size)+'" list="dl-size" placeholder="large headline"></label>'+
+        '<button type="button" class="ghost" data-act="del">Remove</button>'+
+      '</div>'+
+      '<div class="row cols-2">'+
+        '<label class="f">Placement<input type="text" data-k="placement" data-ins id="tp-'+t.id+'" value="'+esc(t.placement)+'" placeholder="above the door"></label>'+
+        '<label class="f">Colour (hex, optional)<span class="hexin"><span class="sw"></span><input type="text" data-k="color" id="tc-'+t.id+'" value="'+esc(t.color)+'" placeholder="#FF5733"></span></label>'+
+      '</div>';
+    bindItem(el, t, S.texts, renderTexts);
+    box.appendChild(el);
+  });
+}
+function renderColors(){
+  var box = $("colors"); box.innerHTML = "";
+  S.colors.forEach(function(c){
+    var el = document.createElement("div"); el.className = "item";
+    el.innerHTML =
+      '<div class="hexrow">'+
+        '<label class="f">Object<input type="text" data-k="target" data-ins id="ct-'+c.id+'" value="'+esc(c.target)+'" placeholder="the sofa"></label>'+
+        '<label class="f">Hex<span class="hexin"><span class="sw"></span><input type="text" data-k="hex" id="ch-'+c.id+'" value="'+esc(c.hex)+'" placeholder="#1B6B6F"></span></label>'+
+        '<label class="f">Gradient to<span class="hexin"><span class="sw"></span><input type="text" data-k="hex2" id="cg-'+c.id+'" value="'+esc(c.hex2||"")+'" placeholder="optional"></span></label>'+
+        '<button type="button" class="ghost" data-act="del">Remove</button>'+
+      '</div>';
+    bindItem(el, c, S.colors, renderColors);
+    box.appendChild(el);
+  });
+}
+function bindItem(el, obj, arr, rerender){
+  el.querySelectorAll("[data-k]").forEach(function(inp){
+    var k = inp.getAttribute("data-k");
+    var sw = inp.parentNode.classList && inp.parentNode.classList.contains("hexin") ? inp.parentNode.querySelector(".sw") : null;
+    var paint = function(){ if(sw){ var h = normHex(inp.value); sw.style.background = validHex(h) ? h : "transparent"; } };
+    paint();
+    inp.addEventListener("input", function(){ obj[k] = inp.value; paint(); changed(); });
+    if(inp.hasAttribute("data-ins")) inp.addEventListener("focus", function(){ lastField = inp; });
+  });
+  el.querySelector("[data-act=del]").addEventListener("click", function(){ arr.splice(arr.indexOf(obj),1); rerender(); changed(); });
+}
+function renderPresets(){
+  var box = $("presets"); box.innerHTML = "";
+  PRESETS.forEach(function(p){
+    var b = document.createElement("button"); b.type = "button"; b.className = "preset"; b.textContent = p[0]; b.title = p[1];
+    var on = S.style.indexOf(p[1]) >= 0; if(on) b.classList.add("on");
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    b.addEventListener("click", function(){
+      if(S.style.indexOf(p[1]) >= 0){ S.style = S.style.replace(p[1],"").replace(/,\s*,/g,",").replace(/^[,\s]+|[,\s]+$/g,""); }
+      else { S.style = stripEnd(S.style) ? stripEnd(S.style)+", "+p[1] : p[1]; }
+      $("style").value = S.style; renderPresets(); changed();
+    });
+    box.appendChild(b);
+  });
+}
+
+function fillStatic(){
+  document.querySelectorAll("[data-bind]").forEach(function(el){ el.value = S[el.getAttribute("data-bind")] == null ? "" : S[el.getAttribute("data-bind")]; });
+  document.querySelectorAll("[data-bind-check]").forEach(function(el){ el.checked = !!S[el.getAttribute("data-bind-check")]; });
+  $("fmt-nl").setAttribute("aria-pressed", S.format!=="json"); $("fmt-json").setAttribute("aria-pressed", S.format==="json");
+  $("btn-copy").textContent = S.format==="json" ? "Copy JSON" : "Copy prompt";
+}
+function renderAll(){ fillStatic(); renderRefs(); renderTexts(); renderColors(); renderPresets(); renderInsertbar(); updateLeadCopy(); renderOutput(); }
+var saveT; function changed(){ renderOutput(); clearTimeout(saveT); saveT = setTimeout(save, 250); }
+
+/* ---------- wiring ---------- */
+document.querySelectorAll("[data-bind]").forEach(function(el){
+  var k = el.getAttribute("data-bind");
+  el.addEventListener(el.tagName==="SELECT" ? "change" : "input", function(){ S[k] = el.value; if(k==="style") renderPresets(); changed(); });
+  if(el.hasAttribute("data-ins")) el.addEventListener("focus", function(){ lastField = el; });
+});
+document.querySelectorAll("[data-bind-check]").forEach(function(el){
+  el.addEventListener("change", function(){ S[el.getAttribute("data-bind-check")] = el.checked; changed(); });
+});
+$("add-ref").addEventListener("click", function(){
+  var n = S.refs.length;
+  S.refs.push({id:nid(),label:"",role: n===0 ? "base" : "object",detail:"",keep:"",target:"",auto:n>0});
+  if(n===1 && S.refs[0].role==="base") { S.refs[0].auto = true; }
+  refsChanged();
+  var inputs = $("refs").querySelectorAll('input[data-k="label"]'); if(inputs.length) inputs[inputs.length-1].focus();
+});
+$("add-text").addEventListener("click", function(){ S.texts.push({id:nid(),text:"",placement:"",style:"",size:"",color:""}); renderTexts(); changed(); });
+$("add-color").addEventListener("click", function(){ S.colors.push({id:nid(),target:"",hex:"",hex2:""}); renderColors(); changed(); });
+$("fmt-nl").addEventListener("click", function(){ S.format = "nl"; fillStatic(); changed(); });
+$("fmt-json").addEventListener("click", function(){ S.format = "json"; fillStatic(); changed(); });
+function copyText(txt, label){
+  var done = function(){ $("toast").textContent = label+" copied"; setTimeout(function(){ $("toast").textContent = ""; }, 1800); };
+  var fallback = function(){ var r = document.createRange(); r.selectNodeContents($("output")); var s = getSelection(); s.removeAllRanges(); s.addRange(r); $("toast").textContent = "Selected. Press Ctrl/⌘+C to copy."; };
+  try{ navigator.clipboard.writeText(txt).then(done, fallback); }catch(e){ fallback(); }
+}
+$("btn-copy").addEventListener("click", function(){ copyText(build(), S.format==="json" ? "JSON prompt" : "Prompt"); });
+$("btn-copy-api").addEventListener("click", function(){ copyText($("api").textContent, "Request body"); });
+$("btn-ex-cabin").addEventListener("click", function(){ S = exCabin(); thumbs = {}; renderAll(); save(); });
+$("btn-ex-swing").addEventListener("click", function(){ S = exSwing(); thumbs = {}; renderAll(); save(); });
+var clearArmed = null;
+$("btn-clear").addEventListener("click", function(){
+  var b = $("btn-clear");
+  if(!clearArmed){ b.textContent = "Click again to clear"; b.classList.add("armed"); clearArmed = setTimeout(function(){ b.textContent = "Clear all"; b.classList.remove("armed"); clearArmed = null; }, 3000); return; }
+  clearTimeout(clearArmed); clearArmed = null; b.textContent = "Clear all"; b.classList.remove("armed");
+  var keepModel = S.model; S = blank(); S.model = keepModel; thumbs = {}; renderAll(); save();
+});
+if(window.matchMedia){ try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderOutput); }catch(e){} }
+new MutationObserver(renderOutput).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
+
+renderAll();
+})();
+</script>
+<datalist id="dl-type"><option>elegant serif typography</option><option>bold industrial lettering</option><option>handwritten script</option><option>ultra-bold decorative serif</option><option>red neon letters</option><option>bold 70s typography</option><option>clean sans-serif</option><option>handwritten marker</option></datalist>
+<datalist id="dl-size"><option>large headline</option><option>medium subheading</option><option>small body copy</option><option>small</option></datalist>
+
+</body></html>
