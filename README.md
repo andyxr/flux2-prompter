@@ -4,6 +4,8 @@ A single-file, browser-based tool for assembling well-structured prompts for [Bl
 
 No build step, no server, no dependencies. Open the HTML file and go.
 
+You can launch it [here](./flux2-prompt-builder.html).
+
 ## Why
 
 FLUX.2 responds best to prompts that put the main subject first, describe each reference image explicitly, and avoid negatives and vague quality words. It is easy to forget those rules mid-prompt. This tool turns them into a form, so the output is right by construction.
