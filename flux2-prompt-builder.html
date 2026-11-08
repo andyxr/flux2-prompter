@@ -1,4 +1,16 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<script>
+/* Theme boot: applies the stored UI theme before first paint so Liquid Glass never flashes Default.
+   Also flags Chromium (navigator.userAgentData), the only engine that takes an SVG filter in backdrop-filter. */
+try{var u=localStorage.getItem("flux2-ui-theme");if(u==="glass")document.documentElement.setAttribute("data-ui","glass");if(navigator.userAgentData)document.documentElement.setAttribute("data-glass-refract","")}catch(e){}
+</script>
+<svg aria-hidden="true" width="0" height="0" style="position:absolute">
+  <filter id="lg-refract" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.006 0.009" numOctaves="1" seed="7" result="noise"/>
+    <feGaussianBlur in="noise" stdDeviation="2" result="softNoise"/>
+    <feDisplacementMap in="SourceGraphic" in2="softNoise" scale="8" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
 <title>FLUX.2 Prompt Builder</title>
 <style>
 /* Mac OS 8 / Platinum theme, shared with minimax-prompter: periwinkle desktop, beveled platinum windows, pinstriped title bars, Charcoal/Geneva type. */
@@ -146,6 +158,130 @@ select{font:inherit;font-size:12px;font-weight:600;color:var(--ink);width:100%;m
 #api{font-family:var(--mono);font-size:11px;line-height:1.5;background:var(--field);border:1px solid var(--edge);box-shadow:var(--well);padding:8px 10px;white-space:pre;overflow-x:auto;margin-block:0;max-height:260px}
 .toast{font-size:11.5px;color:var(--ok);font-weight:600;min-height:1em}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.theme-pick{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink)}
+.theme-pick select{width:auto}
+
+/* ---------------------------------------------------------------------------
+   THEME: Liquid Glass (dark), ported from ct_scan's Liquid Glass dark mode.
+   Smoked translucent panes over a drifting night aurora with a faint dot
+   lattice. Keyed on data-ui="glass"; the default is the Mac OS 8 theme above.
+   Platinum tokens are rebound first, then the rules that hard-code platinum
+   gradients, bevels and pinstripes are overridden one by one.
+   --------------------------------------------------------------------------- */
+:root[data-ui="glass"]{
+  color-scheme:dark;
+  --lg-tint:rgba(26,30,62,.46); --lg-tint-strong:rgba(34,38,76,.66);
+  --lg-blur:blur(22px) saturate(185%);
+  --lg-edge:inset 0 1px 0 rgba(255,255,255,.2),inset 0 -1px 0 rgba(255,255,255,.05),inset 0 0 18px rgba(255,255,255,.04);
+  --lg-drop:0 18px 48px -12px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35);
+  --lg-rim:rgba(255,255,255,.4),rgba(255,255,255,.06),rgba(255,255,255,.02),rgba(255,255,255,.24);
+  --lg-button-drop:0 4px 12px -4px rgba(0,0,0,.5);
+  --lg-control:rgba(255,255,255,.08); --lg-control-hover:rgba(255,255,255,.14); --lg-control-rim:rgba(255,255,255,.16); --lg-control-sink:inset 0 1px 2px rgba(0,0,0,.35);
+  --lg-refract-tint:rgba(18,21,48,.4); --lg-divider:rgba(255,255,255,.08); --lg-well:rgba(6,8,22,.6);
+  --lg-scroll:rgba(255,255,255,.2); --lg-select:rgba(124,156,255,.35);
+  --lg-primary:linear-gradient(to bottom,rgba(84,124,240,.92),rgba(40,78,200,.92));
+
+  /* Platinum tokens, rebound to smoked glass */
+  --desk:#0b0d1f; --plat:var(--lg-tint); --plat-2:rgba(255,255,255,.06); --plat-3:rgba(255,255,255,.12); --field:var(--lg-well);
+  --ink:#eef0ff; --muted:#b9bde0; --dim:#8c91b8;
+  --hi:rgba(255,255,255,.2); --lo:rgba(255,255,255,.08); --lo-2:rgba(255,255,255,.16); --edge:rgba(255,255,255,.16);
+  --sel:#5b80e6; --sel-strong:#a9bcff; --sel-soft:rgba(124,156,255,.22); --focus:rgba(140,168,255,.8);
+  --warn:#f5c56a; --warn-bg:rgba(242,184,75,.14); --ok:#7ddcb2; --ok-bg:rgba(95,211,160,.14); --info:#a9bcff; --info-bg:rgba(124,156,255,.14);
+  --r1:#6FCF97; --r2:#86A8F0; --r3:#F2A861; --r4:#C49AEE; --r5:#F08A8A; --r6:#6FD2D8; --r7:#E0C860; --r8:#E39BBE; --r9:#A8D86A; --r10:#A8B2C4;
+  --bevel:var(--lg-edge); --bevel-btn:var(--lg-edge),var(--lg-button-drop); --well:var(--lg-control-sink);
+  --pinstripe:transparent;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Segoe UI",system-ui,sans-serif;
+  --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  accent-color:#8ca8ff;
+}
+[data-ui="glass"] body{background:#0b0d1f;-webkit-font-smoothing:antialiased}
+[data-ui="glass"] body::before,[data-ui="glass"] body::after{content:"";position:fixed;pointer-events:none;z-index:-1}
+/* Oversized so the drift never exposes an edge; transform + filter only, so it stays on the compositor. */
+[data-ui="glass"] body::before{
+  inset:-25%;
+  background:
+    radial-gradient(38% 42% at 18% 22%,#3a33b8 0%,transparent 70%),
+    radial-gradient(34% 38% at 82% 16%,#8f2166 0%,transparent 70%),
+    radial-gradient(40% 44% at 70% 78%,#0d6f63 0%,transparent 70%),
+    radial-gradient(32% 36% at 24% 82%,#7a4a12 0%,transparent 70%),
+    radial-gradient(30% 30% at 50% 50%,#4f2a9e 0%,transparent 72%),
+    #0b0d1f;
+  animation:lg-undulate 28s ease-in-out infinite,lg-hue 90s linear infinite;
+}
+/* The lattice is what lets the eye see the pane bend light at its rim. */
+[data-ui="glass"] body::after{inset:0;background-image:radial-gradient(rgba(255,255,255,.1) 1px,transparent 1.6px);background-size:22px 22px;mask-image:linear-gradient(to bottom,#000,rgba(0,0,0,.5))}
+@keyframes lg-undulate{
+  0%{transform:translate3d(0,0,0) rotate(0deg) scale(1)}
+  20%{transform:translate3d(5%,-4%,0) rotate(7deg) scale(1.08)}
+  40%{transform:translate3d(-2%,-6%,0) rotate(-4deg) scale(1.03)}
+  60%{transform:translate3d(-6%,3%,0) rotate(-9deg) scale(1.1)}
+  80%{transform:translate3d(3%,5%,0) rotate(5deg) scale(1.04)}
+  100%{transform:translate3d(0,0,0) rotate(0deg) scale(1)}
+}
+@keyframes lg-hue{0%{filter:hue-rotate(0deg) saturate(1)}50%{filter:hue-rotate(180deg) saturate(1.25)}100%{filter:hue-rotate(360deg) saturate(1)}}
+@media (prefers-reduced-motion:reduce){[data-ui="glass"] body::before{animation:none}}
+
+/* Panes: tint + backdrop blur, inset highlights for thickness, masked gradient rim for the specular edge. */
+[data-ui="glass"] :is(header.top,section.card,.out-card,.insertbar){position:relative;isolation:isolate;background:var(--lg-tint);-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur);border:none;box-shadow:var(--lg-edge),var(--lg-drop)}
+
+[data-ui="glass"] :is(section.card,.out-card){border-radius:22px}
+[data-ui="glass"] :is(header.top,section.card,.out-card,.insertbar)::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.5px;background:linear-gradient(135deg,var(--lg-rim));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:1}
+[data-ui="glass"] header.top{border-radius:26px;padding:14px 18px}
+[data-ui="glass"] h1{background:none;padding:0;font-size:22px;letter-spacing:-.01em}
+[data-ui="glass"] .sub{text-shadow:none}
+[data-ui="glass"] div.insertbar{position:sticky;border-radius:999px;padding:8px 14px;top:calc(env(safe-area-inset-top,0px) + 8px);background:var(--lg-tint-strong)}
+
+/* Title bars: the pinstripe and close box give way to a quiet divider. */
+[data-ui="glass"] .card-head{background:none;box-shadow:none;border-bottom:1px solid var(--lg-divider);border-radius:0;padding:10px 14px}
+[data-ui="glass"] .card-head h2,[data-ui="glass"] .out-head h2{font-size:14px}
+[data-ui="glass"] .out-head{background:none;box-shadow:none;border-bottom:1px solid var(--lg-divider);border-radius:0;padding:10px 14px;justify-content:flex-start}
+[data-ui="glass"] .out-head::before{content:none}
+[data-ui="glass"] .out-head h2{background:none;padding:0;margin-left:0}
+
+[data-ui="glass"] :is(.ref,.item){background:rgba(255,255,255,.04);border-color:var(--lg-divider);border-radius:14px;box-shadow:var(--lg-edge)}
+[data-ui="glass"] .ref{border-left-color:var(--rc)}
+[data-ui="glass"] .drop{border-radius:10px;background:var(--lg-control);border-color:var(--lg-control-rim);box-shadow:none}
+[data-ui="glass"] .drop .num{border-radius:50%;border:none;color:#0b0d1f}
+[data-ui="glass"] #output{border:none;border-radius:14px;box-shadow:inset 0 1px 2px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.08)}
+[data-ui="glass"] #api{border:none;border-radius:12px;box-shadow:inset 0 1px 2px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.08)}
+[data-ui="glass"] .checks li{border-radius:10px;border-color:transparent}
+[data-ui="glass"] .mode-pill{border-radius:999px;border-color:transparent}
+
+/* Lens warp, Chromium only (flagged by the boot script): warp the raw backdrop, then frost it lightly. */
+[data-ui="glass"][data-glass-refract] .insertbar{-webkit-backdrop-filter:url(#lg-refract) blur(3px) saturate(180%);backdrop-filter:url(#lg-refract) blur(3px) saturate(180%);background:var(--lg-refract-tint)}
+
+/* Controls */
+[data-ui="glass"] :is(input[type=text],input[type=number],textarea){background:var(--lg-control);border:1px solid var(--lg-control-rim);border-radius:10px;box-shadow:var(--lg-control-sink)}
+[data-ui="glass"] select{border:1px solid var(--lg-control-rim);border-radius:10px;box-shadow:var(--lg-control-sink);background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23b9bde0' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right 10px center/10px no-repeat,var(--lg-control)}
+[data-ui="glass"] select option{background:#1c2042;color:var(--ink)}
+[data-ui="glass"] input[type=checkbox]{border-color:var(--lg-control-rim);border-radius:4px;background:var(--lg-control);box-shadow:var(--lg-control-sink)}
+[data-ui="glass"] input[type=checkbox]:checked{border-color:transparent;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.5l2.5 2.5 4.5-6' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/10px no-repeat,var(--lg-primary)}
+[data-ui="glass"] button{border-color:var(--lg-control-rim);background:var(--lg-control);border-radius:999px;box-shadow:var(--lg-edge),var(--lg-button-drop);font-weight:500}
+[data-ui="glass"] button:hover{background:var(--lg-control-hover)}
+[data-ui="glass"] button:active{background:rgba(124,156,255,.28);color:var(--ink);border-color:var(--lg-control-rim);text-shadow:none;box-shadow:var(--lg-control-sink)}
+[data-ui="glass"] button:disabled{background:var(--lg-control);color:var(--dim);border-color:var(--lg-divider);box-shadow:none}
+[data-ui="glass"] button.primary{margin:0;background:var(--lg-primary);color:#fff;font-weight:600;border-color:rgba(255,255,255,.3);box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 6px 18px -6px rgba(40,78,200,.6)}
+[data-ui="glass"] button.armed{background:var(--warn-bg);color:var(--warn);border-color:var(--warn)}
+[data-ui="glass"] :is(button.ghost,button.add,button.chip){box-shadow:none}
+[data-ui="glass"] button.ghost{background:transparent;border-color:transparent}
+[data-ui="glass"] button.ghost:hover:not(:disabled){background:var(--lg-control);border-color:transparent;box-shadow:none}
+[data-ui="glass"] button.add{background:transparent;border-radius:12px;border-style:dashed}
+[data-ui="glass"] .chip{border-radius:999px;border-color:transparent;background:color-mix(in srgb,var(--rc) 18%,transparent)}
+[data-ui="glass"] button.chip:hover{border-color:var(--rc);background:color-mix(in srgb,var(--rc) 26%,transparent)}
+[data-ui="glass"] button.chip:active{background:color-mix(in srgb,var(--rc) 36%,transparent);color:var(--rc)}
+[data-ui="glass"] .seg{border:1px solid var(--lg-control-rim);border-radius:999px;background:var(--lg-control);padding:2px;gap:2px;box-shadow:none}
+[data-ui="glass"] .seg button{border:none;border-radius:999px;background:transparent;box-shadow:none;color:var(--muted)}
+[data-ui="glass"] .seg button[aria-pressed="true"]{background:rgba(255,255,255,.14);color:var(--ink);text-shadow:none;box-shadow:var(--lg-edge)}
+[data-ui="glass"] .preset.on{background:rgba(124,156,255,.2);border-color:var(--sel-strong);color:var(--ink);box-shadow:var(--lg-edge)}
+[data-ui="glass"] ::selection{background:var(--lg-select);color:var(--ink)}
+[data-ui="glass"] :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+[data-ui="glass"] *{scrollbar-color:var(--lg-scroll) transparent}
+[data-ui="glass"] ::-webkit-scrollbar-track{background:transparent;box-shadow:none}
+[data-ui="glass"] ::-webkit-scrollbar-thumb{background:var(--lg-scroll);border:3px solid transparent;background-clip:padding-box;border-radius:999px;box-shadow:none}
+
+@media (prefers-reduced-transparency:reduce){
+  :root[data-ui="glass"]{--lg-tint:rgba(22,25,52,.94);--lg-tint-strong:rgba(30,34,66,.97);--lg-refract-tint:rgba(22,25,52,.94);--lg-well:#080a1a}
+}
 </style>
 
 <div class="wrap">
@@ -155,6 +291,12 @@ select{font:inherit;font-size:12px;font-weight:600;color:var(--ink);width:100%;m
       <p class="sub">Assemble a FLUX.2 prompt in the order the model weighs it: subject first, then how each reference image is used, then style, context, camera, text and exact colours. Add reference images to get <span class="mono">image 1</span>, <span class="mono">image 2</span>… labels you can drop into any field.</p>
     </div>
     <div class="top-actions">
+      <label class="theme-pick">Theme
+        <select id="ui-theme" aria-label="Choose UI theme">
+          <option value="default">Default</option>
+          <option value="glass">Liquid Glass</option>
+        </select>
+      </label>
       <button id="btn-ex-cabin" type="button">Example: synth cabin</button>
       <button id="btn-ex-swing" type="button">Example: BFL swing</button>
       <button id="btn-clear" type="button">Clear all</button>
@@ -916,6 +1058,13 @@ $("btn-clear").addEventListener("click", function(){
   if(!clearArmed){ b.textContent = "Click again to clear"; b.classList.add("armed"); clearArmed = setTimeout(function(){ b.textContent = "Clear all"; b.classList.remove("armed"); clearArmed = null; }, 3000); return; }
   clearTimeout(clearArmed); clearArmed = null; b.textContent = "Clear all"; b.classList.remove("armed");
   var keepModel = S.model; S = blank(); S.model = keepModel; thumbs = {}; renderAll(); save();
+});
+var UI_KEY = "flux2-ui-theme";
+$("ui-theme").value = document.documentElement.getAttribute("data-ui")==="glass" ? "glass" : "default";
+$("ui-theme").addEventListener("change", function(e){
+  var v = e.target.value === "glass" ? "glass" : "default";
+  if(v==="glass") document.documentElement.setAttribute("data-ui","glass"); else document.documentElement.removeAttribute("data-ui");
+  try{ localStorage.setItem(UI_KEY, v); }catch(err){}
 });
 
 renderAll();
