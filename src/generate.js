@@ -1,0 +1,355 @@
+import { ComfyRunner } from './comfy/run.js'
+import { checkHealth } from './comfy/health.js'
+import { patchT2I, addReference, REF_CAPS } from './comfy/workflows.js'
+import * as store from './gallery/store.js'
+
+// Generate panel, gallery and viewer. Talks to the prompt builder through the
+// small window.F2P bridge the main script exposes.
+
+const F2P = window.F2P
+const $ = (id) => document.getElementById(id)
+const MODEL_KEY = 'flux2-gen-model'
+const TURBO_KEY = 'flux2-gen-turbo'
+const LABEL = { klein: 'FLUX.2 [klein] 9B', dev: 'FLUX.2 [dev]' }
+
+const runner = new ComfyRunner()
+let health = { status: 'checking' }
+let job = null // { controller }
+let images = [] // gallery records, newest first
+let viewIndex = -1
+let lastError = '' // the last job's failure, shown until the next edit or job
+const urls = new Map() // id → object URL
+
+const el = {
+  card: $('gen-card'),
+  model: $('gen-model'),
+  turbo: $('gen-turbo'),
+  turboWrap: $('gen-turbo-wrap'),
+  go: $('gen-go'),
+  cancel: $('gen-cancel'),
+  status: $('gen-status'),
+  progress: $('gen-progress'),
+  bar: $('gen-bar'),
+  pct: $('gen-pct'),
+  msg: $('gen-msg'),
+  gallery: $('gallery'),
+  count: $('gallery-count'),
+  viewer: $('viewer'),
+  vImg: $('v-img'),
+  vMeta: $('v-meta'),
+  vPrompt: $('v-prompt'),
+}
+
+el.card.classList.add('live')
+
+/* ---------- local model picker ---------- */
+function fromPromptModel(m) {
+  return m === 'klein9' ? 'klein' : m === 'dev' ? 'dev' : null
+}
+function readPref(key) {
+  try { return localStorage.getItem(key) } catch { return null }
+}
+function writePref(key, v) {
+  try { localStorage.setItem(key, v) } catch {}
+}
+el.model.value = readPref(MODEL_KEY) || fromPromptModel(F2P.getState().model) || 'dev'
+el.turbo.checked = readPref(TURBO_KEY) !== '0'
+let lastPromptModel = F2P.getState().model
+el.model.addEventListener('change', () => { writePref(MODEL_KEY, el.model.value); update() })
+el.turbo.addEventListener('change', () => { writePref(TURBO_KEY, el.turbo.checked ? '1' : '0'); update() })
+F2P.onChange(() => {
+  lastError = ''
+  const m = F2P.getState().model
+  if (m !== lastPromptModel) {
+    lastPromptModel = m
+    const local = fromPromptModel(m)
+    if (local) { el.model.value = local; writePref(MODEL_KEY, local) }
+  }
+  update()
+})
+
+/* ---------- readiness ---------- */
+function missingFor(model, turbo) {
+  if (health.status !== 'connected') return []
+  const m = [...health.missing[model]]
+  if (model === 'dev' && turbo) m.push(...health.missing.turbo)
+  return m
+}
+
+/** Why Generate can't run right now, or '' when it can. */
+function blocker() {
+  const model = el.model.value
+  const turbo = model === 'dev' && el.turbo.checked
+  if (health.status === 'checking') return 'Checking ComfyUI…'
+  if (health.status === 'offline') return 'ComfyUI is offline. Start it, or set COMFY_URL in .env.local and restart npm run dev.'
+  const missing = missingFor(model, turbo)
+  if (missing.length) return `Missing for ${LABEL[model]}: ${missing.map((m) => `${m.folder}/${m.file}`).join(', ')}`
+  const S = F2P.getState()
+  if (!F2P.build().trim()) return 'Write a prompt first.'
+  const cap = REF_CAPS[model]
+  if (S.refs.length > cap) return `${LABEL[model]} takes up to ${cap} references; ${S.refs.length} are attached.`
+  const noThumb = S.refs.findIndex((r) => !F2P.getThumb(r.id))
+  if (noThumb >= 0) return `Attach a picture for image ${noThumb + 1}, or remove it. Pictures aren't kept after a reload.`
+  return ''
+}
+
+function update() {
+  el.turboWrap.hidden = el.model.value !== 'dev'
+  const why = blocker()
+  el.go.disabled = !!job || !!why
+  el.cancel.hidden = !job
+  if (!job) {
+    if (lastError) setMsg(lastError, 'err')
+    else setMsg(why && health.status !== 'checking' ? why : '', why ? 'warn' : '')
+  }
+  let s
+  if (health.status === 'connected') s = `ComfyUI online${health.gpu ? ` · ${health.gpu}` : ''}${health.version ? ` · v${health.version}` : ''}`
+  else if (health.status === 'offline') s = 'ComfyUI offline'
+  else s = 'Checking ComfyUI…'
+  el.status.textContent = s
+  el.status.dataset.state = health.status
+  const d = F2P.dims()
+  const n = F2P.getState().refs.length
+  el.go.title = `${d.w}×${d.h}${n ? ` with ${n} reference${n > 1 ? 's' : ''}` : ''}`
+}
+
+function setMsg(text, kind = '') {
+  el.msg.textContent = text
+  el.msg.className = `gen-msg ${kind}`
+}
+
+/* ---------- health ---------- */
+let healthTimer
+async function refreshHealth() {
+  clearTimeout(healthTimer)
+  health = await checkHealth(runner.client)
+  update()
+  healthTimer = setTimeout(refreshHealth, health.status === 'connected' ? 60_000 : 5_000)
+}
+window.addEventListener('focus', () => { if (!job) refreshHealth() })
+
+/* ---------- generate ---------- */
+function randomSeed() {
+  return crypto.getRandomValues(new Uint32Array(1))[0]
+}
+
+async function sha(blob) {
+  const buf = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer())
+  return [...new Uint8Array(buf)].slice(0, 12).map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+async function uploadRef(dataUrl, signal) {
+  const blob = await (await fetch(dataUrl)).blob()
+  const ext = (blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg').replace(/\W/g, '')
+  return runner.client.uploadImage(blob, `ref_${await sha(blob)}.${ext}`, { subfolder: 'flux2-prompter', signal })
+}
+
+function showProgress(p) {
+  el.progress.hidden = false
+  if (p.state === 'queued') {
+    el.bar.style.width = '0%'
+    el.pct.textContent = 'Queued in ComfyUI…'
+  } else if (p.max) {
+    const pc = Math.round((100 * p.value) / p.max)
+    el.bar.style.width = `${pc}%`
+    el.pct.textContent = `Step ${p.value} of ${p.max} · ${pc}%`
+  } else {
+    el.pct.textContent = 'Loading model…'
+  }
+}
+
+async function generate() {
+  if (job || blocker()) return
+  const S = F2P.getState()
+  const model = el.model.value
+  const turbo = model === 'dev' && el.turbo.checked
+  const prompt = F2P.build()
+  const d = F2P.dims()
+  const size = { width: d.w, height: d.h }
+  const parsed = parseInt(String(S.seed).trim(), 10)
+  const seed = Number.isFinite(parsed) && parsed >= 0 ? parsed : randomSeed()
+  const refs = S.refs.map((r) => F2P.getThumb(r.id))
+
+  job = { controller: new AbortController() }
+  const { signal } = job.controller
+  lastError = ''
+  update()
+  setMsg('')
+  el.progress.hidden = false
+  el.bar.style.width = '0%'
+  el.pct.textContent = refs.length ? 'Uploading references…' : 'Starting…'
+  try {
+    const wf = patchT2I({ positive: prompt, negative: '', seed, prefix: 'flux2-prompter/gen', model, turbo, ...size })
+    for (const dataUrl of refs) addReference(wf, await uploadRef(dataUrl, signal), size)
+    el.pct.textContent = 'Freeing VRAM…'
+    await runner.enterPhase(model)
+    const [png] = await runner.run(wf, { signal, onProgress: showProgress })
+    const rec = await store.add({
+      id: crypto.randomUUID(),
+      png,
+      prompt,
+      format: S.format,
+      seed,
+      model,
+      turbo,
+      width: d.w,
+      height: d.h,
+      aspect: S.aspect,
+      refCount: refs.length,
+      createdAt: Date.now(),
+    })
+    images.unshift(rec)
+    renderGallery()
+    openViewer(0)
+  } catch (e) {
+    if (!signal.aborted) lastError = e instanceof Error ? e.message : String(e)
+  } finally {
+    job = null
+    el.progress.hidden = true
+    update()
+  }
+}
+
+el.go.addEventListener('click', generate)
+el.cancel.addEventListener('click', () => {
+  job?.controller.abort()
+  el.pct.textContent = 'Cancelling…'
+})
+
+/* ---------- gallery ---------- */
+function url(rec) {
+  let u = urls.get(rec.id)
+  if (!u) { u = URL.createObjectURL(rec.png); urls.set(rec.id, u) }
+  return u
+}
+
+function metaText(rec) {
+  const when = new Date(rec.createdAt).toLocaleString()
+  return `${LABEL[rec.model] ?? rec.model}${rec.turbo ? ' Turbo' : ''} · ${rec.width}×${rec.height} · seed ${rec.seed}${rec.refCount ? ` · ${rec.refCount} ref${rec.refCount > 1 ? 's' : ''}` : ''} · ${when}`
+}
+
+function renderGallery() {
+  el.count.textContent = images.length ? String(images.length) : ''
+  el.gallery.innerHTML = ''
+  if (!images.length) {
+    el.gallery.innerHTML = '<p class="hint">Generated images appear here. They\'re kept in this browser.</p>'
+    return
+  }
+  images.forEach((rec, i) => {
+    const tile = document.createElement('div')
+    tile.className = 'tile'
+    tile.innerHTML =
+      `<button type="button" class="tile-open" aria-label="View image ${i + 1}" title="${escAttr(metaText(rec))}"><img alt="" loading="lazy"></button>` +
+      '<div class="tile-acts">' +
+      '<button type="button" class="tile-btn" data-a="full" aria-label="View full screen" title="Full screen">⛶</button>' +
+      '<button type="button" class="tile-btn" data-a="del" aria-label="Delete image" title="Delete">✕</button>' +
+      '</div>'
+    tile.querySelector('img').src = url(rec)
+    tile.querySelector('.tile-open').addEventListener('click', () => openViewer(i))
+    tile.querySelector('[data-a=full]').addEventListener('click', () => openViewer(i, true))
+    armDelete(tile.querySelector('[data-a=del]'), () => deleteImage(rec.id), '✕', '?')
+    el.gallery.appendChild(tile)
+  })
+}
+
+function escAttr(t) {
+  return String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+}
+
+/** Two-click delete (no confirm(): it blocks the page). */
+function armDelete(btn, action, idle, armedText) {
+  let t = null
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation()
+    if (!t) {
+      btn.classList.add('armed')
+      btn.textContent = armedText
+      btn.title = 'Click again to delete'
+      t = setTimeout(() => { btn.classList.remove('armed'); btn.textContent = idle; btn.title = 'Delete'; t = null }, 3000)
+      return
+    }
+    clearTimeout(t)
+    t = null
+    btn.classList.remove('armed')
+    btn.textContent = idle
+    action()
+  })
+}
+
+async function deleteImage(id) {
+  const i = images.findIndex((r) => r.id === id)
+  if (i < 0) return
+  await store.remove(id)
+  images.splice(i, 1)
+  const u = urls.get(id)
+  if (u) { URL.revokeObjectURL(u); urls.delete(id) }
+  renderGallery()
+  if (el.viewer.open) {
+    if (!images.length) closeViewer()
+    else showInViewer(Math.min(i, images.length - 1))
+  }
+}
+
+/* ---------- viewer ---------- */
+function showInViewer(i) {
+  viewIndex = i
+  const rec = images[i]
+  el.vImg.src = url(rec)
+  el.vImg.alt = `Generated image ${i + 1} of ${images.length}`
+  el.vMeta.textContent = `${i + 1} / ${images.length} · ${metaText(rec)}`
+  el.vPrompt.textContent = rec.prompt
+  $('v-prev').disabled = i <= 0
+  $('v-next').disabled = i >= images.length - 1
+}
+
+function openViewer(i, fullscreen = false) {
+  showInViewer(i)
+  if (!el.viewer.open) el.viewer.showModal()
+  if (fullscreen) toggleFullscreen(true)
+}
+
+function closeViewer() {
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+  if (el.viewer.open) el.viewer.close()
+}
+
+function toggleFullscreen(on = !document.fullscreenElement) {
+  // <dialog> itself can't go fullscreen in Chrome, so its inner shell does.
+  if (on && !document.fullscreenElement) $('v-shell').requestFullscreen?.().catch((e) => console.warn('[gen] fullscreen:', e.message))
+  else if (!on && document.fullscreenElement) document.exitFullscreen().catch(() => {})
+}
+
+$('v-prev').addEventListener('click', () => viewIndex > 0 && showInViewer(viewIndex - 1))
+$('v-next').addEventListener('click', () => viewIndex < images.length - 1 && showInViewer(viewIndex + 1))
+$('v-full').addEventListener('click', () => toggleFullscreen())
+$('v-close').addEventListener('click', closeViewer)
+$('v-prompt-toggle').addEventListener('click', () => {
+  const p = el.vPrompt
+  p.hidden = !p.hidden
+  $('v-prompt-toggle').setAttribute('aria-pressed', String(!p.hidden))
+})
+$('v-download').addEventListener('click', () => {
+  const rec = images[viewIndex]
+  if (!rec) return
+  const a = document.createElement('a')
+  a.href = url(rec)
+  a.download = `flux2-${rec.model}-${rec.seed}.png`
+  a.click()
+})
+armDelete($('v-delete'), () => images[viewIndex] && deleteImage(images[viewIndex].id), 'Delete', 'Click again to delete')
+el.viewer.addEventListener('click', (e) => { if (e.target === el.viewer || e.target.classList.contains('v-stage')) closeViewer() })
+el.viewer.addEventListener('close', () => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}) })
+document.addEventListener('fullscreenchange', () => {
+  $('v-full').textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen'
+})
+el.viewer.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') $('v-prev').click()
+  else if (e.key === 'ArrowRight') $('v-next').click()
+  else if (e.key === 'f' || e.key === 'F') toggleFullscreen()
+})
+
+/* ---------- start ---------- */
+store.persist()
+store.list().then((all) => { images = all; renderGallery() }).catch((e) => setMsg(`Couldn't load the gallery: ${e.message}`, 'err'))
+update()
+refreshHealth()

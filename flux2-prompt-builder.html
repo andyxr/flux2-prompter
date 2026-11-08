@@ -42,7 +42,10 @@ body{background:var(--desk);color:var(--ink);font-family:var(--sans);font-size:1
 ::-webkit-scrollbar-thumb{background:linear-gradient(to right,#e6e6e6,#bcbcbc);border:1px solid var(--edge);box-shadow:var(--bevel-btn)}
 
 /* Page title bar */
-header.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 24px;margin-bottom:16px;padding:8px 12px;background:var(--pinstripe);border:1px solid var(--edge);border-radius:4px;box-shadow:var(--bevel)}
+/* The title bar and the insert bar stay put while the page scrolls. --head-h is the title bar's height, measured by the script. */
+:root{--head-top:env(safe-area-inset-top,0px);--stick:calc(var(--head-top) + var(--head-h,0px) + 8px)}
+html{scroll-padding-top:calc(var(--stick) + 56px)}
+header.top{position:sticky;top:var(--head-top);z-index:10;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 24px;margin-bottom:16px;padding:8px 12px;background:var(--pinstripe);border:1px solid var(--edge);border-radius:4px;box-shadow:var(--bevel)}
 h1{font-family:var(--sans);font-weight:700;font-size:15px;line-height:1.2;margin:0;display:inline-block;background:var(--plat);padding:1px 8px;text-wrap:balance}
 h1 .br{font-family:var(--mono);font-weight:400;font-size:11px;color:var(--sel-strong);margin-left:4px}
 .sub{color:var(--muted);font-size:12px;margin:4px 0 0;max-width:70ch;text-shadow:0 1px 0 rgba(255,255,255,.55)}
@@ -67,7 +70,7 @@ button.add{width:100%;padding:5px 8px}
 .editor{display:flex;flex-direction:column;gap:14px}
 
 /* Insert bar: a platinum toolbar */
-.insertbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--plat);border:1px solid var(--edge);border-radius:3px;box-shadow:var(--bevel),0 2px 0 rgba(0,0,0,.18);padding:6px 8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.insertbar{position:sticky;top:var(--stick);z-index:5;background:var(--plat);border:1px solid var(--edge);border-radius:3px;box-shadow:var(--bevel),0 2px 0 rgba(0,0,0,.18);padding:6px 8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .insertbar .t{font-size:12px;font-weight:700;color:var(--ink);margin-right:4px}
 .insertbar .hint{font-size:11px}
 .chip{font-family:var(--mono);font-size:11px;font-weight:400;padding:1px 6px;border-radius:2px;border:1px solid var(--lo-2);line-height:1.6;color:var(--rc);background:color-mix(in srgb,var(--rc) 18%,#fff);box-shadow:none;text-shadow:none}
@@ -129,7 +132,7 @@ select{font:inherit;font-size:12px;font-weight:600;color:var(--ink);width:100%;m
 .preset.on{background:linear-gradient(to bottom,#c4cde4 0%,var(--sel-soft) 100%);border-color:var(--sel-strong);color:var(--sel-strong);box-shadow:inset 1px 1px 0 var(--lo-2),inset -1px -1px 0 #eeeeee}
 
 /* Output windows: pinstriped title bar with a close box */
-.out{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;flex-direction:column;gap:14px}
+.out{position:sticky;top:var(--stick);display:flex;flex-direction:column;gap:14px}
 @media (max-width:1000px){.out{position:static}}
 .out-card{background:var(--plat);border:1px solid var(--edge);border-radius:4px;padding:0 0 12px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--bevel),1px 1px 0 rgba(0,0,0,.25)}
 .out-card > :not(.out-head){margin-inline:12px}
@@ -160,6 +163,55 @@ select{font:inherit;font-size:12px;font-weight:600;color:var(--ink);width:100%;m
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .theme-pick{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink)}
 .theme-pick select{width:auto}
+
+/* Generate panel, gallery and viewer (src/generate.js) */
+.out{max-height:calc(100vh - var(--stick) - 48px);overflow-y:auto;overscroll-behavior:contain;padding-bottom:2px}
+@media (max-width:1000px){.out{max-height:none;overflow:visible}}
+.gen .gen-on{display:none}
+.gen.live .gen-on{display:flex}
+.gen.live .gen-off{display:none}
+.gen-row{gap:12px;align-items:flex-end;flex-wrap:wrap}
+.gen-row label.f{flex:1 1 180px}
+.gen-row .inline-check{padding-bottom:5px}
+.gen-btns{display:inline-flex;gap:6px;align-items:center}
+.gen-status{font-size:11px;font-weight:600;color:var(--dim)}
+.gen-status::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;background:var(--lo-2);border:1px solid var(--edge);vertical-align:0}
+.gen-status[data-state="connected"]::before{background:#3fae5a}
+.gen-status[data-state="offline"]::before{background:#c43c3c}
+.gen-progress{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.gen-track{height:12px;border:1px solid var(--edge);background:var(--field);box-shadow:var(--well);overflow:hidden}
+.gen-track i{display:block;height:100%;width:0;background:repeating-linear-gradient(-45deg,var(--sel) 0 6px,#5874b8 6px 12px);transition:width .3s}
+.gen-msg{font-size:12px;margin:0;min-height:0}
+.gen-msg:empty{display:none}
+.gen-msg.warn{color:var(--warn);background:var(--warn-bg);border:1px solid var(--lo-2);padding:5px 8px;border-radius:2px}
+.gen-msg.err{color:#7a1010;background:#f6d0d0;border:1px solid var(--lo-2);padding:5px 8px;border-radius:2px;word-break:break-word}
+.gallery-count{font-size:11px;font-weight:700;color:var(--dim);font-variant-numeric:tabular-nums}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.gallery > .hint{grid-column:1/-1}
+.tile{position:relative;aspect-ratio:1;border:1px solid var(--edge);background:var(--field);box-shadow:var(--well);overflow:hidden}
+.tile .tile-open{all:unset;display:block;width:100%;height:100%;cursor:zoom-in}
+.tile .tile-open:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+.tile img{width:100%;height:100%;object-fit:cover;display:block}
+.tile-acts{position:absolute;top:4px;right:4px;display:flex;gap:4px;opacity:0;transition:opacity .15s}
+.tile:hover .tile-acts,.tile:focus-within .tile-acts{opacity:1}
+@media (hover:none){.tile-acts{opacity:1}}
+.tile-btn{padding:0;width:24px;height:24px;line-height:22px;font-size:12px;text-align:center}
+.tile-btn.armed{width:auto;padding:0 8px}
+.viewer{padding:0;border:1px solid var(--edge);background:var(--plat);color:var(--ink);width:min(96vw,1600px);max-width:96vw;height:94vh;max-height:94vh;display:none;flex-direction:column;box-shadow:var(--bevel),0 12px 40px rgba(0,0,0,.45)}
+.viewer[open]{display:flex}
+.viewer::backdrop{background:rgba(10,10,20,.72)}
+.v-shell{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--plat)}
+.v-shell:fullscreen{background:#000}
+.v-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:#111;padding:8px}
+.v-stage img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+.v-bar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--pinstripe);border-top:1px solid var(--lo)}
+.v-meta{font-size:11.5px;color:var(--ink);font-variant-numeric:tabular-nums;background:var(--plat);padding:0 6px}
+.v-btns{display:flex;flex-wrap:wrap;gap:6px}
+.v-btns button.primary{margin:0 0 0 4px}
+.v-prompt{margin:0;max-height:22vh;overflow:auto;padding:8px 12px;font:11.5px/1.5 var(--mono);white-space:pre-wrap;word-break:break-word;background:var(--field);border-top:1px solid var(--lo)}
+.v-shell:fullscreen .v-stage{background:#000}
+.v-shell:fullscreen .v-bar,.v-shell:fullscreen .v-prompt{background:rgba(20,20,30,.85);color:#eee}
+.v-shell:fullscreen .v-meta{background:none;color:#eee}
 
 /* ---------------------------------------------------------------------------
    THEME: Liquid Glass (dark), ported from ct_scan's Liquid Glass dark mode.
@@ -226,10 +278,11 @@ select{font:inherit;font-size:12px;font-weight:600;color:var(--ink);width:100%;m
 
 [data-ui="glass"] :is(section.card,.out-card){border-radius:22px}
 [data-ui="glass"] :is(header.top,section.card,.out-card,.insertbar)::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.5px;background:linear-gradient(135deg,var(--lg-rim));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:1}
-[data-ui="glass"] header.top{border-radius:26px;padding:14px 18px}
+[data-ui="glass"] header.top{position:sticky;border-radius:26px;padding:14px 18px}
+:root[data-ui="glass"]{--head-top:calc(env(safe-area-inset-top,0px) + 8px)}
 [data-ui="glass"] h1{background:none;padding:0;font-size:22px;letter-spacing:-.01em}
 [data-ui="glass"] .sub{text-shadow:none}
-[data-ui="glass"] div.insertbar{position:sticky;border-radius:999px;padding:8px 14px;top:calc(env(safe-area-inset-top,0px) + 8px);background:var(--lg-tint-strong)}
+[data-ui="glass"] div.insertbar{position:sticky;border-radius:999px;padding:8px 14px;top:var(--stick);background:var(--lg-tint-strong)}
 
 /* Title bars: the pinstripe and close box give way to a quiet divider. */
 [data-ui="glass"] .card-head{background:none;box-shadow:none;border-bottom:1px solid var(--lg-divider);border-radius:0;padding:10px 14px}
@@ -278,6 +331,24 @@ select{font:inherit;font-size:12px;font-weight:600;color:var(--ink);width:100%;m
 [data-ui="glass"] *{scrollbar-color:var(--lg-scroll) transparent}
 [data-ui="glass"] ::-webkit-scrollbar-track{background:transparent;box-shadow:none}
 [data-ui="glass"] ::-webkit-scrollbar-thumb{background:var(--lg-scroll);border:3px solid transparent;background-clip:padding-box;border-radius:999px;box-shadow:none}
+
+/* Generate panel, gallery and viewer */
+[data-ui="glass"] button.primary:disabled{background:var(--lg-control);color:var(--dim);border-color:var(--lg-divider);box-shadow:none}
+[data-ui="glass"] .gen-track{border:none;border-radius:999px;background:var(--lg-control);box-shadow:var(--lg-control-sink)}
+[data-ui="glass"] .gen-track i{background:var(--lg-primary);border-radius:999px}
+[data-ui="glass"] .gen-status::before{border:none}
+[data-ui="glass"] .gen-msg.warn,[data-ui="glass"] .gen-msg.err{border-color:transparent;border-radius:10px}
+[data-ui="glass"] .gen-msg.err{color:#ffb4b4;background:rgba(240,90,90,.16)}
+[data-ui="glass"] .tile{border:none;border-radius:12px;background:var(--lg-control);box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+[data-ui="glass"] .tile-btn{background:rgba(10,12,30,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+[data-ui="glass"] .viewer{border:none;border-radius:22px;background:var(--lg-tint-strong);-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur);box-shadow:var(--lg-edge),var(--lg-drop);overflow:hidden}
+[data-ui="glass"] .viewer::backdrop{background:rgba(4,5,14,.7);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+[data-ui="glass"] .v-shell{background:none}
+[data-ui="glass"] .v-shell:fullscreen{background:#000}
+[data-ui="glass"] .v-stage{background:rgba(0,0,0,.35)}
+[data-ui="glass"] .v-bar{background:none;border-top:1px solid var(--lg-divider)}
+[data-ui="glass"] .v-meta{background:none}
+[data-ui="glass"] .v-prompt{background:var(--lg-well);border-top:1px solid var(--lg-divider)}
 
 @media (prefers-reduced-transparency:reduce){
   :root[data-ui="glass"]{--lg-tint:rgba(22,25,52,.94);--lg-tint-strong:rgba(30,34,66,.97);--lg-refract-tint:rgba(22,25,52,.94);--lg-well:#080a1a}
@@ -482,6 +553,32 @@ select{font:inherit;font-size:12px;font-weight:600;color:var(--ink);width:100%;m
         </div>
         <div class="toast" id="toast" aria-live="polite"></div>
       </div>
+      <div class="out-card gen" id="gen-card">
+        <div class="out-head"><h2>Generate</h2><span class="gen-status" id="gen-status" data-state="checking"></span></div>
+        <p class="hint gen-off">Generating needs the dev server: run <span class="mono">npm run dev</span> and open the page it serves.</p>
+        <div class="gen-on gen-row">
+          <label class="f">Generate with
+            <select id="gen-model" aria-label="Local model for generation">
+              <option value="klein">FLUX.2 [klein] 9B</option>
+              <option value="dev">FLUX.2 [dev]</option>
+            </select>
+          </label>
+          <label class="inline-check" id="gen-turbo-wrap"><input type="checkbox" id="gen-turbo"> Turbo LoRA (8 steps)</label>
+        </div>
+        <div class="gen-on out-foot">
+          <span class="hint">Runs locally in ComfyUI at the size and seed set above.</span>
+          <span class="gen-btns"><button type="button" id="gen-cancel" hidden>Cancel</button><button class="primary" type="button" id="gen-go" disabled>Generate</button></span>
+        </div>
+        <div class="gen-progress" id="gen-progress" hidden>
+          <div class="gen-track"><i id="gen-bar"></i></div>
+          <span id="gen-pct" aria-live="polite"></span>
+        </div>
+        <p class="gen-msg" id="gen-msg" aria-live="polite"></p>
+      </div>
+      <div class="out-card gen">
+        <div class="out-head"><h2>Generations</h2><span class="gallery-count" id="gallery-count"></span></div>
+        <div class="gallery" id="gallery"><p class="hint">Generated images appear here.</p></div>
+      </div>
       <div class="out-card">
         <div class="out-head"><h2>Checks</h2></div>
         <ul class="checks" id="checks"></ul>
@@ -490,12 +587,30 @@ select{font:inherit;font-size:12px;font-weight:600;color:var(--ink);width:100%;m
         <div class="out-head"><h2>Request settings</h2><button type="button" id="btn-copy-api">Copy</button></div>
         <div class="meta" id="dims"></div>
         <pre id="api"></pre>
-        <p class="hint">Body for BFL's API. In ComfyUI, feed references in the same order so "image 1" matches the first one.</p>
+        <p class="hint">Body for BFL's API. In ComfyUI, feed references in the same order so "image 1" matches the first one. The Generate panel does this for you.</p>
       </div>
     </aside>
   </div>
 </div>
 
+<dialog class="viewer" id="viewer" aria-label="Generated image viewer">
+<div class="v-shell" id="v-shell">
+  <div class="v-stage"><img id="v-img" alt=""></div>
+  <div class="v-bar">
+    <span class="v-meta" id="v-meta"></span>
+    <span class="v-btns">
+      <button type="button" id="v-prev" aria-label="Previous image">◀</button>
+      <button type="button" id="v-next" aria-label="Next image">▶</button>
+      <button type="button" id="v-prompt-toggle" aria-pressed="false">Prompt</button>
+      <button type="button" id="v-full">Full screen</button>
+      <button type="button" id="v-download">Download</button>
+      <button type="button" id="v-delete">Delete</button>
+      <button type="button" class="primary" id="v-close">Close</button>
+    </span>
+  </div>
+  <pre class="v-prompt" id="v-prompt" hidden></pre>
+</div>
+</dialog>
 <datalist id="dl-light"><option>soft diffused window light</option><option>golden hour sunlight</option><option>direct on-camera flash, high exposure</option><option>three-point softbox setup, soft diffused highlights</option><option>dramatic rim lighting</option><option>overcast natural light</option><option>neon signage glow</option><option>dappled forest light</option><option>harsh midday sun with hard shadows</option></datalist>
 <datalist id="dl-comp"><option>rule of thirds</option><option>centred, symmetrical composition</option><option>subject small in a vast frame, lots of negative space</option><option>tight crop, filling the frame</option><option>leading lines toward the subject</option><option>flat lay, top-down</option></datalist>
 <datalist id="dl-body"><option>Hasselblad X2D</option><option>Sony A7IV</option><option>Canon 5D Mark IV</option><option>Fujifilm X-T5</option><option>Leica M11</option><option>Contax T2</option><option>early digital camera</option><option>Kodak Portra 400</option><option>Kodak Ektachrome 64</option><option>Ilford HP5 black-and-white film</option><option>Cinestill 800T</option></datalist>
@@ -828,6 +943,7 @@ function renderOutput(){
   var ul = $("checks"); ul.innerHTML = "";
   checks(p).forEach(function(c){ var li = document.createElement("li"); li.className = c[0]; li.innerHTML = "<b>"+esc(c[1])+"</b><span>"+esc(c[2])+"</span>"; ul.appendChild(li); });
   renderApi(p);
+  notify();
 }
 function renderApi(p){
   var d = dims(), m = MODELS[S.model];
@@ -949,7 +1065,7 @@ function updateRefLine(el, r, i){
 }
 function readThumb(r, file){
   var fr = new FileReader();
-  fr.onload = function(){ thumbs[r.id] = fr.result; renderRefs(); };
+  fr.onload = function(){ thumbs[r.id] = fr.result; renderRefs(); notify(); };
   fr.readAsDataURL(file);
 }
 function refsChanged(){ renderRefs(); renderInsertbar(); updateLeadCopy(); changed(); }
@@ -1067,9 +1183,29 @@ $("ui-theme").addEventListener("change", function(e){
   try{ localStorage.setItem(UI_KEY, v); }catch(err){}
 });
 
+/* ---------- sticky title bar: publish its height so the insert bar and output column sit below it ---------- */
+(function(){
+  var head = document.querySelector("header.top");
+  var set = function(){ document.documentElement.style.setProperty("--head-h", head.offsetHeight+"px"); };
+  set();
+  if(window.ResizeObserver) new ResizeObserver(set).observe(head); else window.addEventListener("resize", set);
+})();
+
+/* ---------- bridge for the Generate panel (src/generate.js) ---------- */
+var listeners = [];
+function notify(){ listeners.forEach(function(fn){ try{ fn(); }catch(e){ console.error(e); } }); }
+window.F2P = {
+  getState: function(){ return S; },
+  build: build,
+  dims: dims,
+  getThumb: function(id){ return thumbs[id]; },
+  onChange: function(fn){ listeners.push(fn); }
+};
+
 renderAll();
 })();
 </script>
+<script type="module" src="/src/generate.js"></script>
 <datalist id="dl-type"><option>elegant serif typography</option><option>bold industrial lettering</option><option>handwritten script</option><option>ultra-bold decorative serif</option><option>red neon letters</option><option>bold 70s typography</option><option>clean sans-serif</option><option>handwritten marker</option></datalist>
 <datalist id="dl-size"><option>large headline</option><option>medium subheading</option><option>small body copy</option><option>small</option></datalist>
 
