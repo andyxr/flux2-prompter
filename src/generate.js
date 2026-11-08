@@ -27,7 +27,8 @@ const el = {
   turboWrap: $('gen-turbo-wrap'),
   go: $('gen-go'),
   cancel: $('gen-cancel'),
-  status: $('gen-status'),
+  sbText: $('sb-text'),
+  sbRecheck: $('sb-recheck'),
   progress: $('gen-progress'),
   bar: $('gen-bar'),
   pct: $('gen-pct'),
@@ -102,12 +103,6 @@ function update() {
     if (lastError) setMsg(lastError, 'err')
     else setMsg(why && health.status !== 'checking' ? why : '', why ? 'warn' : '')
   }
-  let s
-  if (health.status === 'connected') s = `ComfyUI online${health.gpu ? ` · ${health.gpu}` : ''}${health.version ? ` · v${health.version}` : ''}`
-  else if (health.status === 'offline') s = 'ComfyUI offline'
-  else s = 'Checking ComfyUI…'
-  el.status.textContent = s
-  el.status.dataset.state = health.status
   const d = F2P.dims()
   const n = F2P.getState().refs.length
   el.go.title = `${d.w}×${d.h}${n ? ` with ${n} reference${n > 1 ? 's' : ''}` : ''}`
@@ -118,15 +113,64 @@ function setMsg(text, kind = '') {
   el.msg.className = `gen-msg ${kind}`
 }
 
-/* ---------- health ---------- */
+/* ---------- health + status bar ---------- */
+// Like boarder's status bar: "Connected · RTX 5090 · ComfyUI 0.44 · klein 9B ✓ · dev ✓ · Turbo LoRA ✓".
+// Re-checks every 5 s while ComfyUI is down, every 60 s once it's up, and on window focus.
+const GROUPS = [
+  ['klein', 'klein 9B'],
+  ['dev', 'dev'],
+  ['turbo', 'Turbo LoRA'],
+]
 let healthTimer
+let checking = false
 async function refreshHealth() {
+  if (checking) return
+  checking = true
   clearTimeout(healthTimer)
-  health = await checkHealth(runner.client)
+  renderStatusBar()
+  try {
+    health = await checkHealth(runner.client)
+  } finally {
+    checking = false
+  }
   update()
+  renderStatusBar()
   healthTimer = setTimeout(refreshHealth, health.status === 'connected' ? 60_000 : 5_000)
 }
 window.addEventListener('focus', () => { if (!job) refreshHealth() })
+el.sbRecheck.hidden = false
+el.sbRecheck.addEventListener('click', refreshHealth)
+
+const SEP = '<span class="sb-sep" aria-hidden="true">·</span>'
+let lastStatus = ''
+function renderStatusBar() {
+  el.sbRecheck.disabled = checking
+  el.sbRecheck.classList.toggle('spin', checking)
+  let html
+  if (health.status === 'checking') {
+    html = '<span class="sb-dot" data-state="checking"></span><span>Checking ComfyUI…</span>'
+  } else if (health.status === 'offline') {
+    html =
+      '<span class="sb-dot" data-state="offline"></span><span class="sb-strong">ComfyUI not reachable</span>' +
+      SEP +
+      '<span>Start ComfyUI, or set <code>COMFY_URL</code> in <code>.env.local</code> and restart <code>npm run dev</code>. Building prompts still works.</span>'
+  } else {
+    html = '<span class="sb-dot" data-state="connected"></span><span class="sb-strong">Connected</span>'
+    if (health.gpu) html += SEP + `<span>${escAttr(health.gpu)}</span>`
+    if (health.version) html += SEP + `<span>ComfyUI ${escAttr(health.version)}</span>`
+    for (const [g, label] of GROUPS) {
+      const miss = health.missing[g]
+      html += SEP
+      html += miss.length
+        ? `<span class="sb-miss" tabindex="0" title="${miss.map((m) => escAttr(`${m.file} → ComfyUI/models/${m.folder}/`)).join('&#10;')}">${label} <b aria-label="missing">✕</b> ${miss.length} missing</span>`
+        : `<span>${label} <b class="sb-ok" aria-label="present">✓</b></span>`
+    }
+  }
+  if (html !== lastStatus) {
+    el.sbText.innerHTML = html
+    lastStatus = html
+  }
+}
 
 /* ---------- generate ---------- */
 function randomSeed() {
