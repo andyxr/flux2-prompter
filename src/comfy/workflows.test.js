@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addReference, findNodes, isLink, patchT2I, TURBO_STEPS, DEV_STEPS } from './workflows.js'
+import { addReference, captionWorkflow, CAPTION_MODEL, findNodes, isLink, patchT2I, TURBO_STEPS, DEV_STEPS } from './workflows.js'
 import { REQUIRED_MODELS } from './health.js'
 
 const common = { positive: 'a red fox', negative: '', seed: 42, prefix: 'flux2-prompter/gen' }
@@ -72,4 +72,18 @@ describe('addReference', () => {
     expect(dangling(wf)).toEqual([])
     expect(byType(wf, 'BasicGuider')[0].inputs.conditioning).toEqual(['ref1_conditioning', 0])
   })
+})
+
+describe('captionWorkflow', () => {
+  const wf = captionWorkflow('flux2-prompter/ref_abc.png')
+  it('loads the image and Florence-2 model', () => {
+    expect(byType(wf, 'LoadImage')[0].inputs.image).toBe('flux2-prompter/ref_abc.png')
+    expect(byType(wf, 'Florence2ModelLoader')[0].inputs.model).toBe(CAPTION_MODEL)
+    expect(byType(wf, 'Florence2Run')[0].inputs.task).toBe('more_detailed_caption')
+  })
+  it('previews the caption output (slot 2)', () => {
+    const [id] = findNodes(wf, { type: 'Florence2Run' })
+    expect(byType(wf, 'PreviewAny')[0].inputs.source).toEqual([id, 2])
+  })
+  it('has no dangling links', () => expect(dangling(wf)).toEqual([]))
 })

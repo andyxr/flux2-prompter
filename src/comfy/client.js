@@ -49,6 +49,13 @@ export class ComfyClient {
     return list.map(String)
   }
 
+  /** A node's /object_info entry, or undefined when the node isn't installed. */
+  async objectInfo(node, signal) {
+    const res = await this.fetchFn(`${this.base}/object_info/${encodeURIComponent(node)}`, { signal })
+    if (!res.ok) return undefined
+    return (await res.json().catch(() => ({})))?.[node]
+  }
+
   /** Uploads to ComfyUI's input folder; returns the name a LoadImage node takes. */
   async uploadImage(blob, filename, opts = {}) {
     const form = new FormData()

@@ -1,6 +1,6 @@
 import { ComfyRunner } from './comfy/run.js'
 import { checkHealth } from './comfy/health.js'
-import { patchT2I, addReference, REF_CAPS } from './comfy/workflows.js'
+import { patchT2I, addReference, captionWorkflow, CAPTION_MODEL, REF_CAPS } from './comfy/workflows.js'
 import * as store from './gallery/store.js'
 
 // Generate panel, gallery and viewer. Talks to the prompt builder through the
@@ -127,6 +127,7 @@ const GROUPS = [
   ['klein', 'klein 9B'],
   ['dev', 'dev'],
   ['turbo', 'Turbo LoRA'],
+  ['florence', 'Florence-2'],
 ]
 let healthTimer
 let checking = false
@@ -142,6 +143,7 @@ async function refreshHealth() {
   }
   update()
   renderStatusBar()
+  F2P.setCaptionBlock(captionBlocker())
   healthTimer = setTimeout(refreshHealth, health.status === 'connected' ? 60_000 : 5_000)
 }
 window.addEventListener('focus', () => { if (!job) refreshHealth() })
@@ -169,7 +171,7 @@ function renderStatusBar() {
       const miss = health.missing[g]
       html += SEP
       html += miss.length
-        ? `<span class="sb-miss" tabindex="0" title="${miss.map((m) => escAttr(`${m.file} → ComfyUI/models/${m.folder}/`)).join('&#10;')}">${label} <b aria-label="missing">✕</b> ${miss.length} missing</span>`
+        ? `<span class="sb-miss" tabindex="0" title="${miss.map((m) => escAttr(m.node ? `${m.file} custom nodes → ComfyUI/custom_nodes/` : `${m.file} → ComfyUI/models/${m.folder}/`)).join('&#10;')}">${label} <b aria-label="missing">✕</b> ${miss.length} missing</span>`
         : `<span>${label} <b class="sb-ok" aria-label="present">✓</b></span>`
     }
   }
@@ -178,6 +180,23 @@ function renderStatusBar() {
     lastStatus = html
   }
 }
+
+/* ---------- captions (Florence-2) ---------- */
+/** Why reference captioning can't run right now, or ''. */
+function captionBlocker() {
+  if (health.status === 'checking') return 'Checking ComfyUI…'
+  if (health.status === 'offline') return 'ComfyUI is offline. Start it to caption pictures.'
+  const [m] = health.missing.florence ?? []
+  if (m?.node) return 'Captioning needs the ComfyUI-Florence2 custom nodes in ComfyUI/custom_nodes/.'
+  if (m) return `Captioning needs ${CAPTION_MODEL} in ComfyUI/models/LLM/.`
+  return ''
+}
+
+F2P.setCaptioner(async (dataUrl) => {
+  const [text] = await runner.runText(captionWorkflow(await uploadRef(dataUrl)))
+  return text
+})
+F2P.setCaptionBlock(captionBlocker())
 
 /* ---------- generate ---------- */
 function randomSeed() {

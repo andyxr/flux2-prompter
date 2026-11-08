@@ -1,4 +1,5 @@
 import { ComfyClient, gpuLabel } from './client.js'
+import { CAPTION_MODEL } from './workflows.js'
 
 // Start-up check, slimmed from boarder (src/core/comfy/health.ts): is ComfyUI
 // up, and does it have the model files the klein and dev workflows load?
@@ -22,7 +23,7 @@ const basename = (p) => p.split(/[\\/]/).pop() ?? p
 
 /**
  * { status: 'offline', error } |
- * { status: 'connected', version?, gpu?, missing: { klein: [], dev: [], turbo: [] } }
+ * { status: 'connected', version?, gpu?, missing: { klein: [], dev: [], turbo: [], florence: [] } }
  */
 export async function checkHealth(client = new ComfyClient(), signal) {
   let stats
@@ -45,6 +46,7 @@ export async function checkHealth(client = new ComfyClient(), signal) {
   const missing = {}
   for (const [group, models] of Object.entries(REQUIRED_MODELS))
     missing[group] = models.filter((m) => !lists[m.folder].has(m.file))
+  missing.florence = await florenceMissing(client, signal)
   const dev = stats.devices[0]
   return {
     status: 'connected',
@@ -52,4 +54,17 @@ export async function checkHealth(client = new ComfyClient(), signal) {
     gpu: dev ? gpuLabel(dev.name) : undefined,
     missing,
   }
+}
+
+/** What captioning lacks: the Florence-2 nodes, or the model they load. */
+async function florenceMissing(client, signal) {
+  let info
+  try {
+    info = await client.objectInfo('Florence2ModelLoader', signal)
+  } catch {
+    info = undefined
+  }
+  if (!info) return [{ file: 'ComfyUI-Florence2', folder: 'custom_nodes', node: true }]
+  const models = info.input?.required?.model?.[0]
+  return Array.isArray(models) && models.includes(CAPTION_MODEL) ? [] : [{ file: CAPTION_MODEL, folder: 'LLM' }]
 }

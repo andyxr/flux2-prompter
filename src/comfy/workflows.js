@@ -129,3 +129,33 @@ function prune(wf, outputs) {
   outputs.forEach(visit)
   for (const id of Object.keys(wf)) if (!keep.has(id)) delete wf[id]
 }
+
+/** The Florence-2 model the caption workflow loads (from ComfyUI/models/LLM). */
+export const CAPTION_MODEL = 'Florence-2-large'
+
+/**
+ * Captions one uploaded image with Florence-2 (kijai's ComfyUI-Florence2 nodes).
+ * PreviewAny makes the caption a text output that /history returns.
+ */
+export function captionWorkflow(image, task = 'more_detailed_caption') {
+  return {
+    cap_load: { class_type: 'LoadImage', inputs: { image }, _meta: { title: 'Caption image' } },
+    cap_model: { class_type: 'Florence2ModelLoader', inputs: { model: CAPTION_MODEL, precision: 'fp16' } },
+    cap_run: {
+      class_type: 'Florence2Run',
+      inputs: {
+        image: ['cap_load', 0],
+        florence2_model: ['cap_model', 0],
+        text_input: '',
+        task,
+        fill_mask: false,
+        keep_model_loaded: false,
+        max_new_tokens: 1024,
+        num_beams: 3,
+        do_sample: false,
+        seed: 1,
+      },
+    },
+    cap_out: { class_type: 'PreviewAny', inputs: { source: ['cap_run', 2] } },
+  }
+}

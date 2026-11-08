@@ -77,6 +77,17 @@ describe('ComfyRunner', () => {
     })
   })
 
+  it('runText returns text outputs', async () => {
+    const text = { status: { status_str: 'success', messages: [] }, outputs: { cap_out: { text: ['A red fox.'] } } }
+    const { runner } = fakeComfy(text)
+    expect(await runner.runText({})).toEqual(['A red fox.'])
+  })
+
+  it('runText fails when the job has no text output', async () => {
+    const { runner } = fakeComfy(done)
+    await expect(runner.runText({})).rejects.toThrow('without a text output')
+  })
+
   it('frees VRAM before the first job and on a model switch only', async () => {
     const { runner, calls } = fakeComfy(done)
     await runner.enterPhase('klein')

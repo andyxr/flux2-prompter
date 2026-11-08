@@ -59,6 +59,14 @@ export class ComfyRunner {
     return Promise.all(files.map((f) => this.client.view(f, opts.signal)))
   }
 
+  /** Queues `workflow` and resolves with its text outputs (e.g. PreviewAny), in output order. */
+  async runText(workflow, opts = {}) {
+    this.socket()
+    const promptId = await this.client.queue(workflow, this.clientId, opts.signal)
+    const { entry, failure } = await this.finish(promptId, opts)
+    return textOutputs(entry, failure)
+  }
+
   async finish(promptId, opts) {
     const { signal, onProgress } = opts
     onProgress?.({ state: 'queued' })
@@ -116,11 +124,22 @@ export class ComfyRunner {
   }
 }
 
-function outputs(entry, failure) {
+function throwIfFailed(entry, failure) {
   if (entry.status?.status_str === 'error') {
     const msg = entry.status.messages?.find(([t]) => t === 'execution_error')?.[1]
     throw new ComfyError(failure ?? errorText(msg))
   }
+}
+
+function textOutputs(entry, failure) {
+  throwIfFailed(entry, failure)
+  const texts = Object.values(entry.outputs).flatMap((o) => o?.text ?? []).map(String)
+  if (texts.length === 0) throw new ComfyError('The job finished without a text output')
+  return texts
+}
+
+function outputs(entry, failure) {
+  throwIfFailed(entry, failure)
   const files = Object.values(entry.outputs).flatMap((o) => o?.images ?? [])
   if (files.length === 0) throw new ComfyError('The job finished without an output')
   return files

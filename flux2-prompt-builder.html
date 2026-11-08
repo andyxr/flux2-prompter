@@ -116,6 +116,8 @@ select{font:inherit;font-size:12px;font-weight:600;color:var(--ink);width:100%;m
 .ref-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .ref-head .grow{flex:1}
 .ref-line{font-size:11.5px;color:var(--dim);font-style:italic;margin:0}
+.ref-err{font-size:11.5px;margin:0;color:#7a1010;word-break:break-word}
+[data-ui="glass"] .ref-err{color:#ffb4b4}
 .mode-pill{font-size:11px;font-weight:600;padding:0 6px;border:1px solid var(--lo-2);border-radius:2px;background:var(--info-bg);color:var(--info)}
 
 .item{border:1px solid var(--lo);border-radius:2px;padding:10px;display:grid;gap:8px;background:var(--plat);box-shadow:inset 1px 1px 0 var(--hi),1px 1px 0 var(--hi)}
@@ -722,6 +724,10 @@ function exSwing(){
 
 var S = load() || exCabin();
 var thumbs = {};
+/* Captions: Florence-2 runs in ComfyUI via src/generate.js (F2P.setCaptioner). */
+var captioner = null;           // async function(dataUrl) → caption text
+var capBlock = "Captioning needs ComfyUI. Run npm run dev and open the page it serves."; // why captioning can't run, or ""
+var capState = {};              // ref id → { busy } | { err }
 var lastField = null;
 
 function load(){ try{ var r = localStorage.getItem(KEY); if(!r) return null; var o = JSON.parse(r); var b = blank(); for(var k in b){ if(!(k in o)) o[k]=b[k]; } return o; }catch(e){ return null; } }
@@ -1035,6 +1041,7 @@ function renderRefs(){
           '<label class="inline-check"><input type="checkbox" data-k="auto" id="ra-'+r.id+'"'+(r.auto?" checked":"")+'> Write role line</label><span class="grow"></span>'+
           '<button type="button" class="ghost" data-act="up" aria-label="Move up"'+(i===0?" disabled":"")+'>↑</button>'+
           '<button type="button" class="ghost" data-act="down" aria-label="Move down"'+(i===S.refs.length-1?" disabled":"")+'>↓</button>'+
+          '<button type="button" class="ghost" data-act="caption" data-id="'+r.id+'">'+(capState[r.id]&&capState[r.id].busy?"Captioning…":r.caption?"Re-caption":"Caption")+'</button>'+
           '<button type="button" class="ghost" data-act="del" aria-label="Remove">Remove</button></div>'+
         '<div class="row cols-2">'+
           '<label class="f">What it shows<input type="text" data-k="label" id="rl-'+r.id+'" value="'+esc(r.label)+'" placeholder="the woman, the swing, the cabin…"></label>'+
@@ -1046,6 +1053,8 @@ function renderRefs(){
           '<label class="f">Keep<input type="text" data-k="keep" data-ins id="rk-'+r.id+'" value="'+esc(r.keep)+'" placeholder="its exact shape, colours and labels"></label>'+
         '</div>'+
         '<p class="ref-line"></p>'+
+        (r.caption||capState[r.id] ? '<label class="f">Caption (Florence-2, not added to the prompt)<textarea data-k="caption" id="rc-'+r.id+'" rows="3" placeholder="Captioning…">'+esc(r.caption||"")+'</textarea></label>' : '')+
+        (capState[r.id]&&capState[r.id].err ? '<p class="ref-err" role="alert">Caption failed: '+esc(capState[r.id].err)+'</p>' : '')+
       '</div>';
     if(thumbs[r.id]) el.querySelector(".drop img").src = thumbs[r.id];
     el.querySelectorAll("[data-k]").forEach(function(inp){
@@ -1063,7 +1072,8 @@ function renderRefs(){
     el.querySelectorAll("[data-act]").forEach(function(b){
       b.addEventListener("click", function(){
         var a = b.getAttribute("data-act");
-        if(a==="del"){ S.refs.splice(i,1); delete thumbs[r.id]; }
+        if(a==="caption"){ runCaption(r); return; }
+        if(a==="del"){ S.refs.splice(i,1); delete thumbs[r.id]; delete capState[r.id]; }
         if(a==="up" && i>0){ S.refs.splice(i-1,0,S.refs.splice(i,1)[0]); }
         if(a==="down" && i<S.refs.length-1){ S.refs.splice(i+1,0,S.refs.splice(i,1)[0]); }
         refsChanged();
@@ -1080,6 +1090,44 @@ function renderRefs(){
     box.appendChild(el);
   });
   $("add-ref").disabled = S.refs.length >= 10;
+  paintCaptionButtons();
+}
+/* Why this reference can't be captioned right now, or "". */
+function captionBlocker(r){
+  if(!thumbs[r.id]) return "Attach a picture first, then caption it.";
+  if(capState[r.id] && capState[r.id].busy) return "Captioning…";
+  if(!captioner) return "Captioning needs ComfyUI. Run npm run dev and open the page it serves.";
+  return capBlock;
+}
+function paintCaptionButtons(){
+  document.querySelectorAll('#refs [data-act="caption"]').forEach(function(b){
+    var r = S.refs.find(function(x){ return x.id===b.getAttribute("data-id"); }); if(!r) return;
+    var why = captionBlocker(r);
+    b.disabled = !!why;
+    b.title = why || "Describe this picture with Florence-2 in ComfyUI";
+  });
+}
+/* renderRefs() rebuilds the list; keep the caret where it was. */
+function renderRefsKeepFocus(){
+  var a = document.activeElement, id = a && a.id, s = a && a.selectionStart, e = a && a.selectionEnd;
+  renderRefs();
+  var b = id && document.getElementById(id);
+  if(b && b !== document.activeElement){ b.focus(); try{ if(s!=null) b.setSelectionRange(s,e); }catch(err){} }
+}
+function runCaption(r){
+  if(captionBlocker(r)) return;
+  var thumb = thumbs[r.id];
+  capState[r.id] = { busy:true };
+  renderRefsKeepFocus();
+  captioner(thumb).then(function(text){
+    if(thumbs[r.id] !== thumb) return; // picture changed meanwhile
+    r.caption = String(text||"").trim();
+    delete capState[r.id];
+    changed();
+  }, function(e){
+    if(thumbs[r.id] !== thumb) return;
+    capState[r.id] = { err: e && e.message ? e.message : String(e) };
+  }).then(renderRefsKeepFocus);
 }
 function updateRefLine(el, r, i){
   var line = el.querySelector(".ref-line");
@@ -1087,7 +1135,7 @@ function updateRefLine(el, r, i){
 }
 function readThumb(r, file){
   var fr = new FileReader();
-  fr.onload = function(){ thumbs[r.id] = fr.result; renderRefs(); notify(); };
+  fr.onload = function(){ thumbs[r.id] = fr.result; r.caption = ""; delete capState[r.id]; renderRefs(); notify(); changed(); }; // a new picture needs a new caption
   fr.readAsDataURL(file);
 }
 function refsChanged(){ renderRefs(); renderInsertbar(); updateLeadCopy(); changed(); }
@@ -1221,6 +1269,8 @@ window.F2P = {
   build: build,
   dims: dims,
   getThumb: function(id){ return thumbs[id]; },
+  setCaptioner: function(fn){ captioner = fn; paintCaptionButtons(); },
+  setCaptionBlock: function(why){ if(why !== capBlock){ capBlock = why; paintCaptionButtons(); } },
   onChange: function(fn){ listeners.push(fn); }
 };
 
