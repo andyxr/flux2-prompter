@@ -22,7 +22,7 @@ FLUX.2 responds best to prompts that put the main subject first, describe each r
 - **Request settings.** Aspect ratio, output megapixels, seed, guidance, steps, and prompt upsampling. The tool shows the computed width and height and a ready-to-copy request body for the BFL API, or the equivalent order of inputs for ComfyUI.
 - **Worked examples.** Two built-in examples show a full multi-reference prompt end to end.
 - **Autosave.** Your work is kept in the browser's local storage, so a refresh does not lose it.
-- **Generate locally with ComfyUI.** Run the prompt on FLUX.2 [klein] 9B or [dev] (optionally with the Turbo LoRA) at the chosen size and seed. Attached reference images are uploaded and wired in order, so "image 1" means the first one. Progress is shown live and jobs can be cancelled.
+- **Generate locally with ComfyUI.** Run the prompt on FLUX.2 [klein] 9B or [dev] (optionally with the Turbo LoRA) at the chosen size and seed. Attached reference images are uploaded and wired in order, so "image 1" means the first one. Progress is shown live and jobs can be cancelled. A status bar along the bottom shows whether ComfyUI is connected, its GPU and version, and whether the klein, dev and Turbo LoRA model files are present.
 - **Generations gallery.** Results are kept in the browser (IndexedDB). Open any image in a viewer, step through with the arrow keys, go full screen, download, or delete it.
 - **Light and dark themes**, responsive down to phone width.
 
