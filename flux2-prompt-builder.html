@@ -173,6 +173,8 @@ select{font:inherit;font-size:12px;font-weight:600;color:var(--ink);width:100%;m
 .gen-row{gap:12px;align-items:flex-end;flex-wrap:wrap}
 .gen-row label.f{flex:1 1 180px}
 .gen-row .inline-check{padding-bottom:5px}
+.gen-row .inline-check.off{color:var(--dim);cursor:default}
+.gen-row .inline-check.off input{opacity:.5;cursor:default}
 .gen-btns{display:inline-flex;gap:6px;align-items:center}
 /* ComfyUI status bar, fixed along the bottom (as in boarder) */
 :root{--foot-h:30px}
@@ -579,7 +581,7 @@ body{padding-bottom:calc(40px + var(--foot-h))}
               <option value="dev">FLUX.2 [dev]</option>
             </select>
           </label>
-          <label class="inline-check" id="gen-turbo-wrap"><input type="checkbox" id="gen-turbo"> Turbo LoRA (8 steps)</label>
+          <label class="inline-check" id="gen-turbo-wrap"><input type="checkbox" id="gen-turbo"> Turbo LoRA <span class="hint" id="gen-turbo-hint"></span></label>
         </div>
         <div class="gen-on out-foot">
           <span class="hint">Runs locally in ComfyUI at the size and seed set above.</span>

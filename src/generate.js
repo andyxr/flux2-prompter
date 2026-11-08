@@ -25,6 +25,7 @@ const el = {
   model: $('gen-model'),
   turbo: $('gen-turbo'),
   turboWrap: $('gen-turbo-wrap'),
+  turboHint: $('gen-turbo-hint'),
   go: $('gen-go'),
   cancel: $('gen-cancel'),
   sbText: $('sb-text'),
@@ -95,7 +96,13 @@ function blocker() {
 }
 
 function update() {
-  el.turboWrap.hidden = el.model.value !== 'dev'
+  // The Turbo LoRA is trained for FLUX.2 [dev]; klein shows the option greyed out.
+  const isDev = el.model.value === 'dev'
+  el.turbo.checked = isDev && readPref(TURBO_KEY) !== '0' // klein shows it unticked; dev's choice is remembered
+  el.turbo.disabled = !isDev || !!job
+  el.turboWrap.classList.toggle('off', !isDev)
+  el.turboHint.textContent = isDev ? (el.turbo.checked ? '8 steps, faster' : '20 steps, full quality') : 'only for FLUX.2 [dev]'
+  el.turboWrap.title = isDev ? 'Flux_2-Turbo-LoRA: 8 sampling steps instead of 20' : 'The Turbo LoRA only works with FLUX.2 [dev]. Switch "Generate with" to dev to use it.'
   const why = blocker()
   el.go.disabled = !!job || !!why
   el.cancel.hidden = !job
