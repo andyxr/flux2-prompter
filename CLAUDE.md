@@ -1,6 +1,6 @@
-# Boarder
+# FLUX.2 Prompter
 
-A local web app for creating FLux 2 image generation prompts.
+A local web app for creating FLUX.2 image generation prompts, and generating them in ComfyUI.
 
 ## Rules
 During prompt sessions, be extremely concise. Sacrifice grammar for the sake of concision.
@@ -11,6 +11,7 @@ All markdown files and html files must not have hard lengths set on their senten
 
 - **OS:** Windows. Use Git Bash or PowerShell.
 - **ComfyUI** runs at `http://127.0.0.1:8188`, on an RTX 5090 (32 GB). It already has the FLUX.2 klein and dev models and the MiniMax H3 R2V models.
+- **Dev server:** `npm run dev` serves http://127.0.0.1:5174/flux2-prompt-builder.html and proxies `/comfy` to `COMFY_URL` (from `.env.local`, default `http://127.0.0.1:8188`). Tests: `npm test`.
 - **herdr panes:** ComfyUI runs in the herdr pane called `comfy`. If you need to run `npm run dev`, do so in the herdr pane called `run`.
 ## Working conventions
 

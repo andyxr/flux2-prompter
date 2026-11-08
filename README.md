@@ -2,7 +2,7 @@
 
 A single-file, browser-based tool for assembling well-structured prompts for [Black Forest Labs' FLUX.2](https://bfl.ai) image models. It orders your prompt the way the model weighs it, checks it for common mistakes, and produces a matching API request body.
 
-No build step, no server, no dependencies. Open the HTML file and go.
+Prompt building needs nothing: open the HTML file and go. To generate images locally with ComfyUI, run it through the small Vite dev server (see below).
 
 You can launch it [here](./flux2-prompt-builder.html).
 
@@ -22,6 +22,8 @@ FLUX.2 responds best to prompts that put the main subject first, describe each r
 - **Request settings.** Aspect ratio, output megapixels, seed, guidance, steps, and prompt upsampling. The tool shows the computed width and height and a ready-to-copy request body for the BFL API, or the equivalent order of inputs for ComfyUI.
 - **Worked examples.** Two built-in examples show a full multi-reference prompt end to end.
 - **Autosave.** Your work is kept in the browser's local storage, so a refresh does not lose it.
+- **Generate locally with ComfyUI.** Run the prompt on FLUX.2 [klein] 9B or [dev] (optionally with the Turbo LoRA) at the chosen size and seed. Attached reference images are uploaded and wired in order, so "image 1" means the first one. Progress is shown live and jobs can be cancelled.
+- **Generations gallery.** Results are kept in the browser (IndexedDB). Open any image in a viewer, step through with the arrow keys, go full screen, download, or delete it.
 - **Light and dark themes**, responsive down to phone width.
 
 ## Usage
@@ -34,7 +36,18 @@ FLUX.2 responds best to prompts that put the main subject first, describe each r
 
 The page loads three Google Fonts for its own typography. Everything else is inline, so it also works offline with system fonts as fallback.
 
-Reference images stay in your browser. Nothing is uploaded anywhere.
+Reference images stay in your browser unless you click Generate, which uploads them to your own ComfyUI's input folder.
+
+## Generating with ComfyUI
+
+1. Install Node 24 or later, then run `npm install`.
+2. Make sure ComfyUI is running and has the FLUX.2 [klein] 9B and/or [dev] model files. The Generate panel lists any that are missing.
+3. Run `npm run dev`, which serves the app at http://127.0.0.1:5174/flux2-prompt-builder.html.
+4. Build a prompt, pick a model under **Generate with**, and click **Generate**.
+
+ComfyUI is expected at `http://127.0.0.1:8188`. To use a different address, copy `.env.example` to `.env.local`, set `COMFY_URL`, and restart `npm run dev`. The dev server proxies `/comfy` to that address, so the browser never talks to ComfyUI directly.
+
+Generated images are stored in this browser. ComfyUI also keeps its own copies under `output/flux2-prompter/`; deleting an image in the app doesn't remove those.
 
 ## Prompting rules the tool encodes
 
@@ -48,14 +61,21 @@ Reference images stay in your browser. Nothing is uploaded anywhere.
 ## Project layout
 
 ```
-flux2-prompt-builder.html   The whole app: markup, styles, and script
+flux2-prompt-builder.html   The prompt builder: markup, styles, and script
+src/generate.js             Generate panel, gallery and viewer
+src/comfy/                  ComfyUI client, job runner, workflow patching, health check
+src/workflows/              FLUX.2 klein and dev API-format workflows
+src/gallery/store.js        IndexedDB store for generated images
+vite.config.js              Dev server and the /comfy proxy (COMFY_URL)
 LICENSE                     Apache License 2.0
 README.md                   This file
 ```
 
+Run the tests with `npm test`.
+
 ## Contributing
 
-Issues and pull requests are welcome. Keep the project to a single self-contained HTML file with no build step.
+Issues and pull requests are welcome. Keep prompt building working from the plain HTML file; only generation needs the dev server.
 
 ## License
 
