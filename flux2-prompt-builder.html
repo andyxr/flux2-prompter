@@ -174,6 +174,7 @@ select{font:inherit;font-size:12px;font-weight:600;color:var(--ink);width:100%;m
 .gen.live .gen-off{display:none}
 .gen-row{gap:12px;align-items:flex-end;flex-wrap:wrap}
 .gen-row label.f{flex:1 1 180px}
+.gen-row label.f.gen-count{flex:0 0 72px}
 .gen-row .inline-check{padding-bottom:5px}
 .gen-row .inline-check.off{color:var(--dim);cursor:default}
 .gen-row .inline-check.off input{opacity:.5;cursor:default}
@@ -583,6 +584,11 @@ body{padding-bottom:calc(40px + var(--foot-h))}
             <select id="gen-model" aria-label="Local model for generation">
               <option value="klein">FLUX.2 [klein] 9B</option>
               <option value="dev">FLUX.2 [dev]</option>
+            </select>
+          </label>
+          <label class="f gen-count">Images
+            <select id="gen-count" aria-label="Number of images to generate">
+              <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
             </select>
           </label>
           <label class="inline-check" id="gen-turbo-wrap"><input type="checkbox" id="gen-turbo"> Turbo LoRA <span class="hint" id="gen-turbo-hint"></span></label>
@@ -1005,9 +1011,13 @@ function seedError(){
   if(!/^\d+$/.test(v) || +v > Number.MAX_SAFE_INTEGER) return "Seed must be a whole number from 0 to "+Number.MAX_SAFE_INTEGER+", or blank for random.";
   return "";
 }
+var batch = 1; // images per Generate click, set by src/generate.js; above 1 every image gets a random seed
 function paintSeed(){
   var v = trim(String(S.seed)), err = seedError(), h = $("seed-hint");
-  h.textContent = err ? err : v ? "Fixed: every run uses seed "+v+", so only your prompt changes the result." : "Random: each run gets a new seed. It's saved with the image; use \"Use seed\" in the viewer to keep it.";
+  h.textContent = err ? err
+    : batch > 1 ? "Batch of "+batch+": each image gets its own random seed"+(v ? ", so seed "+v+" is ignored. Set Images to 1 to use it." : ".")
+    : v ? "Fixed: every run uses seed "+v+", so only your prompt changes the result."
+    : "Random: each run gets a new seed. It's saved with the image; use \"Use seed\" in the viewer to keep it.";
   h.classList.toggle("warn", !!err);
   $("seed-random").disabled = !v;
 }
@@ -1298,6 +1308,7 @@ window.F2P = {
   dims: dims,
   getThumb: function(id){ return thumbs[id]; },
   setSeed: setSeed,
+  setBatch: function(n){ batch = n; paintSeed(); },
   seedError: seedError,
   setCaptioner: function(fn){ captioner = fn; paintCaptionButtons(); },
   setCaptionBlock: function(why){ if(why !== capBlock){ capBlock = why; paintCaptionButtons(); } },
