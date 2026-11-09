@@ -178,6 +178,11 @@ select{font:inherit;font-size:12px;font-weight:600;color:var(--ink);width:100%;m
 .gen-row .inline-check.off{color:var(--dim);cursor:default}
 .gen-row .inline-check.off input{opacity:.5;cursor:default}
 .gen-btns{display:inline-flex;gap:6px;align-items:center}
+.gen-seed{display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap}
+.gen-seed label.f{flex:1 1 160px}
+.gen-seed input{font-variant-numeric:tabular-nums}
+.gen-seed-hint{margin:0}
+.gen-seed-hint.warn{color:var(--warn)}
 /* ComfyUI status bar, fixed along the bottom (as in boarder) */
 :root{--foot-h:30px}
 body{padding-bottom:calc(40px + var(--foot-h))}
@@ -425,9 +430,6 @@ body{padding-bottom:calc(40px + var(--foot-h))}
             </label>
           </div>
           <div class="row cols-3">
-            <label class="f">Seed (optional)
-              <input type="text" id="seed" data-bind="seed" inputmode="numeric" placeholder="42">
-            </label>
             <label class="f" id="flex-guid">Guidance [flex] (1.5–10)
               <input type="number" id="guidance" data-bind="guidance" min="1.5" max="10" step="0.5">
             </label>
@@ -585,8 +587,16 @@ body{padding-bottom:calc(40px + var(--foot-h))}
           </label>
           <label class="inline-check" id="gen-turbo-wrap"><input type="checkbox" id="gen-turbo"> Turbo LoRA <span class="hint" id="gen-turbo-hint"></span></label>
         </div>
+        <div class="gen-seed">
+          <label class="f">Seed
+            <input type="text" id="seed" data-bind="seed" inputmode="numeric" autocomplete="off" placeholder="Random each run">
+          </label>
+          <button type="button" id="seed-dice" title="Pick a random seed and keep it for the next runs">🎲 New</button>
+          <button type="button" id="seed-random" title="Clear the seed: every run gets a new random one">Random</button>
+        </div>
+        <p class="hint gen-seed-hint" id="seed-hint"></p>
         <div class="gen-on out-foot">
-          <span class="hint">Runs locally in ComfyUI at the size and seed set above.</span>
+          <span class="hint">Runs locally in ComfyUI at the output size set in Setup.</span>
           <span class="gen-btns"><button type="button" id="gen-cancel" hidden>Cancel</button><button class="primary" type="button" id="gen-go" disabled>Generate</button></span>
         </div>
         <div class="gen-progress" id="gen-progress" hidden>
@@ -627,6 +637,7 @@ body{padding-bottom:calc(40px + var(--foot-h))}
       <button type="button" id="v-next" aria-label="Next image">▶</button>
       <button type="button" id="v-prompt-toggle" aria-pressed="false">Prompt</button>
       <button type="button" id="v-full">Full screen</button>
+      <button type="button" id="v-seed">Use seed</button>
       <button type="button" id="v-download">Download</button>
       <button type="button" id="v-delete">Delete</button>
       <button type="button" class="primary" id="v-close">Close</button>
@@ -979,13 +990,30 @@ function renderApi(p){
   var body = {prompt: S.format==="json" ? "<the JSON above, as a string>" : (p.length>90 ? p.slice(0,87)+"…" : p)};
   S.refs.forEach(function(r,i){ body[i===0?"input_image":"input_image_"+(i+1)] = "<image "+(i+1)+(trim(r.label)?": "+trim(r.label):"")+", URL or base64>"; });
   body.width = d.w; body.height = d.h;
-  if(trim(S.seed)) body.seed = parseInt(S.seed,10) || S.seed;
+  if(trim(String(S.seed)) && !seedError()) body.seed = parseInt(S.seed,10);
   if(S.upsample) body.prompt_upsampling = true;
   if(S.model==="flex"){ if(trim(String(S.guidance))) body.guidance = parseFloat(S.guidance); if(trim(String(S.steps))) body.steps = parseInt(S.steps,10); }
   body.output_format = "png";
   $("api").textContent = JSON.stringify(body,null,2);
   $("flex-guid").hidden = $("flex-steps").hidden = S.model!=="flex";
+  paintSeed();
 }
+/* ---------- seed: blank = new random seed each run ---------- */
+function seedError(){
+  var v = trim(String(S.seed));
+  if(!v) return "";
+  if(!/^\d+$/.test(v) || +v > Number.MAX_SAFE_INTEGER) return "Seed must be a whole number from 0 to "+Number.MAX_SAFE_INTEGER+", or blank for random.";
+  return "";
+}
+function paintSeed(){
+  var v = trim(String(S.seed)), err = seedError(), h = $("seed-hint");
+  h.textContent = err ? err : v ? "Fixed: every run uses seed "+v+", so only your prompt changes the result." : "Random: each run gets a new seed. It's saved with the image; use \"Use seed\" in the viewer to keep it.";
+  h.classList.toggle("warn", !!err);
+  $("seed-random").disabled = !v;
+}
+function setSeed(v){ S.seed = v == null ? "" : String(v); $("seed").value = S.seed; changed(); }
+$("seed-dice").addEventListener("click", function(){ setSeed(crypto.getRandomValues(new Uint32Array(1))[0]); });
+$("seed-random").addEventListener("click", function(){ setSeed(""); });
 function renderInsertbar(){
   var bar = $("insertbar"); bar.innerHTML = "";
   var t = document.createElement("span"); t.className = "t"; t.textContent = "Insert"; bar.appendChild(t);
@@ -1269,6 +1297,8 @@ window.F2P = {
   build: build,
   dims: dims,
   getThumb: function(id){ return thumbs[id]; },
+  setSeed: setSeed,
+  seedError: seedError,
   setCaptioner: function(fn){ captioner = fn; paintCaptionButtons(); },
   setCaptionBlock: function(why){ if(why !== capBlock){ capBlock = why; paintCaptionButtons(); } },
   onChange: function(fn){ listeners.push(fn); }

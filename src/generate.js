@@ -92,7 +92,7 @@ function blocker() {
   if (S.refs.length > cap) return `${LABEL[model]} takes up to ${cap} references; ${S.refs.length} are attached.`
   const noThumb = S.refs.findIndex((r) => !F2P.getThumb(r.id))
   if (noThumb >= 0) return `Attach a picture for image ${noThumb + 1}, or remove it. Pictures aren't kept after a reload.`
-  return ''
+  return F2P.seedError()
 }
 
 function update() {
@@ -236,8 +236,8 @@ async function generate() {
   const prompt = F2P.build()
   const d = F2P.dims()
   const size = { width: d.w, height: d.h }
-  const parsed = parseInt(String(S.seed).trim(), 10)
-  const seed = Number.isFinite(parsed) && parsed >= 0 ? parsed : randomSeed()
+  const fixed = String(S.seed ?? '').trim()
+  const seed = fixed ? Number(fixed) : randomSeed() // blocker() has already rejected a bad seed
   const refs = S.refs.map((r) => F2P.getThumb(r.id))
 
   job = { controller: new AbortController() }
@@ -247,7 +247,7 @@ async function generate() {
   setMsg('')
   el.progress.hidden = false
   el.bar.style.width = '0%'
-  el.pct.textContent = refs.length ? 'Uploading references…' : 'Starting…'
+  el.pct.textContent = `${refs.length ? 'Uploading references…' : 'Starting…'} · seed ${seed}`
   try {
     const wf = patchT2I({ positive: prompt, negative: '', seed, prefix: 'flux2-prompter/gen', model, turbo, ...size })
     for (const dataUrl of refs) addReference(wf, await uploadRef(dataUrl, signal), size)
@@ -311,11 +311,13 @@ function renderGallery() {
     tile.innerHTML =
       `<button type="button" class="tile-open" aria-label="View image ${i + 1}" title="${escAttr(metaText(rec))}"><img alt="" loading="lazy"></button>` +
       '<div class="tile-acts">' +
+      `<button type="button" class="tile-btn" data-a="seed" aria-label="Use seed ${rec.seed}" title="Use seed ${rec.seed}">#</button>` +
       '<button type="button" class="tile-btn" data-a="full" aria-label="View full screen" title="Full screen">⛶</button>' +
       '<button type="button" class="tile-btn" data-a="del" aria-label="Delete image" title="Delete">✕</button>' +
       '</div>'
     tile.querySelector('img').src = url(rec)
     tile.querySelector('.tile-open').addEventListener('click', () => openViewer(i))
+    tile.querySelector('[data-a=seed]').addEventListener('click', (e) => { e.stopPropagation(); useSeed(rec) })
     tile.querySelector('[data-a=full]').addEventListener('click', () => openViewer(i, true))
     armDelete(tile.querySelector('[data-a=del]'), () => deleteImage(rec.id), '✕', '?')
     el.gallery.appendChild(tile)
@@ -368,6 +370,8 @@ function showInViewer(i) {
   el.vImg.alt = `Generated image ${i + 1} of ${images.length}`
   el.vMeta.textContent = `${i + 1} / ${images.length} · ${metaText(rec)}`
   el.vPrompt.textContent = rec.prompt
+  $('v-seed').textContent = `Use seed ${rec.seed}`
+  $('v-seed').title = 'Set this as the fixed seed for the next runs'
   $('v-prev').disabled = i <= 0
   $('v-next').disabled = i >= images.length - 1
 }
@@ -397,6 +401,17 @@ $('v-prompt-toggle').addEventListener('click', () => {
   const p = el.vPrompt
   p.hidden = !p.hidden
   $('v-prompt-toggle').setAttribute('aria-pressed', String(!p.hidden))
+})
+/** Make this image's seed the fixed seed for the next runs. */
+function useSeed(rec) {
+  F2P.setSeed(rec.seed)
+  if (!job) setMsg(`Seed set to ${rec.seed}. Click Random to go back to a new seed each run.`)
+}
+$('v-seed').addEventListener('click', () => {
+  const rec = images[viewIndex]
+  if (!rec) return
+  useSeed(rec)
+  $('v-seed').textContent = `Seed ${rec.seed} set ✓`
 })
 $('v-download').addEventListener('click', () => {
   const rec = images[viewIndex]
