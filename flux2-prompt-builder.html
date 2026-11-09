@@ -42,9 +42,9 @@ body{background:var(--desk);color:var(--ink);font-family:var(--sans);font-size:1
 ::-webkit-scrollbar-thumb{background:linear-gradient(to right,#e6e6e6,#bcbcbc);border:1px solid var(--edge);box-shadow:var(--bevel-btn)}
 
 /* Page title bar */
-/* The title bar and the insert bar stay put while the page scrolls. --head-h is the title bar's height, measured by the script. */
+/* The title bar stays put while the page scrolls. --head-h is the title bar's height, measured by the script. */
 :root{--head-top:env(safe-area-inset-top,0px);--stick:calc(var(--head-top) + var(--head-h,0px) + 8px)}
-html{scroll-padding-top:calc(var(--stick) + 56px)}
+html{scroll-padding-top:calc(var(--stick) + 8px)}
 header.top{position:sticky;top:var(--head-top);z-index:10;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 24px;margin-bottom:16px;padding:8px 12px;background:var(--pinstripe);border:1px solid var(--edge);border-radius:4px;box-shadow:var(--bevel)}
 h1{font-family:var(--sans);font-weight:700;font-size:15px;line-height:1.2;margin:0;display:inline-block;background:var(--plat);padding:1px 8px;text-wrap:balance}
 h1 .br{font-family:var(--mono);font-weight:400;font-size:11px;color:var(--sel-strong);margin-left:4px}
@@ -70,9 +70,6 @@ button.add{width:100%;padding:5px 8px}
 .editor{display:flex;flex-direction:column;gap:14px}
 
 /* Insert bar: a platinum toolbar */
-.insertbar{position:sticky;top:var(--stick);z-index:5;background:var(--plat);border:1px solid var(--edge);border-radius:3px;box-shadow:var(--bevel),0 2px 0 rgba(0,0,0,.18);padding:6px 8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.insertbar .t{font-size:12px;font-weight:700;color:var(--ink);margin-right:4px}
-.insertbar .hint{font-size:11px}
 .chip{font-family:var(--mono);font-size:11px;font-weight:400;padding:1px 6px;border-radius:2px;border:1px solid var(--lo-2);line-height:1.6;color:var(--rc);background:color-mix(in srgb,var(--rc) 18%,#fff);box-shadow:none;text-shadow:none}
 button.chip{box-shadow:inset 1px 1px 0 rgba(255,255,255,.7),inset -1px -1px 0 rgba(0,0,0,.15)}
 button.chip:hover{border-color:var(--edge);background:color-mix(in srgb,var(--rc) 12%,#fff)}
@@ -174,10 +171,16 @@ select{font:inherit;font-size:12px;font-weight:600;color:var(--ink);width:100%;m
 .gen.live .gen-off{display:none}
 .gen-row{gap:12px;align-items:flex-end;flex-wrap:wrap}
 .gen-row label.f{flex:1 1 180px}
+.gen-row label.f.gen-count{flex:0 0 72px}
 .gen-row .inline-check{padding-bottom:5px}
 .gen-row .inline-check.off{color:var(--dim);cursor:default}
 .gen-row .inline-check.off input{opacity:.5;cursor:default}
 .gen-btns{display:inline-flex;gap:6px;align-items:center}
+.gen-seed{display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap}
+.gen-seed label.f{flex:1 1 160px}
+.gen-seed input{font-variant-numeric:tabular-nums}
+.gen-seed-hint{margin:0}
+.gen-seed-hint.warn{color:var(--warn)}
 /* ComfyUI status bar, fixed along the bottom (as in boarder) */
 :root{--foot-h:30px}
 body{padding-bottom:calc(40px + var(--foot-h))}
@@ -291,15 +294,14 @@ body{padding-bottom:calc(40px + var(--foot-h))}
 @media (prefers-reduced-motion:reduce){[data-ui="glass"] body::before{animation:none}}
 
 /* Panes: tint + backdrop blur, inset highlights for thickness, masked gradient rim for the specular edge. */
-[data-ui="glass"] :is(header.top,section.card,.out-card,.insertbar){position:relative;isolation:isolate;background:var(--lg-tint);-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur);border:none;box-shadow:var(--lg-edge),var(--lg-drop)}
+[data-ui="glass"] :is(header.top,section.card,.out-card){position:relative;isolation:isolate;background:var(--lg-tint);-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur);border:none;box-shadow:var(--lg-edge),var(--lg-drop)}
 
 [data-ui="glass"] :is(section.card,.out-card){border-radius:22px}
-[data-ui="glass"] :is(header.top,section.card,.out-card,.insertbar)::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.5px;background:linear-gradient(135deg,var(--lg-rim));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:1}
+[data-ui="glass"] :is(header.top,section.card,.out-card)::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.5px;background:linear-gradient(135deg,var(--lg-rim));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:1}
 [data-ui="glass"] header.top{position:sticky;border-radius:26px;padding:14px 18px}
 :root[data-ui="glass"]{--head-top:calc(env(safe-area-inset-top,0px) + 8px)}
 [data-ui="glass"] h1{background:none;padding:0;font-size:22px;letter-spacing:-.01em}
 [data-ui="glass"] .sub{text-shadow:none}
-[data-ui="glass"] div.insertbar{position:sticky;border-radius:999px;padding:8px 14px;top:var(--stick);background:var(--lg-tint-strong)}
 
 /* Title bars: the pinstripe and close box give way to a quiet divider. */
 [data-ui="glass"] .card-head{background:none;box-shadow:none;border-bottom:1px solid var(--lg-divider);border-radius:0;padding:10px 14px}
@@ -318,7 +320,6 @@ body{padding-bottom:calc(40px + var(--foot-h))}
 [data-ui="glass"] .mode-pill{border-radius:999px;border-color:transparent}
 
 /* Lens warp, Chromium only (flagged by the boot script): warp the raw backdrop, then frost it lightly. */
-[data-ui="glass"][data-glass-refract] .insertbar{-webkit-backdrop-filter:url(#lg-refract) blur(3px) saturate(180%);backdrop-filter:url(#lg-refract) blur(3px) saturate(180%);background:var(--lg-refract-tint)}
 
 /* Controls */
 [data-ui="glass"] :is(input[type=text],input[type=number],textarea){background:var(--lg-control);border:1px solid var(--lg-control-rim);border-radius:10px;box-shadow:var(--lg-control-sink)}
@@ -379,7 +380,7 @@ body{padding-bottom:calc(40px + var(--foot-h))}
   <header class="top">
     <div>
       <h1>FLUX.2 Prompt Builder <span class="br">[pro·max·flex·klein]</span></h1>
-      <p class="sub">Assemble a FLUX.2 prompt in the order the model weighs it: subject first, then how each reference image is used, then style, context, camera, text and exact colours. Add reference images to get <span class="mono">image 1</span>, <span class="mono">image 2</span>… labels you can drop into any field.</p>
+      <p class="sub">Assemble a FLUX.2 prompt in the order the model weighs it: subject first, then how each reference image is used, then style, context, camera, text and exact colours. Refer to reference images by number: <span class="mono">image 1</span>, <span class="mono">image 2</span>…</p>
     </div>
     <div class="top-actions">
       <label class="theme-pick">Theme
@@ -396,8 +397,6 @@ body{padding-bottom:calc(40px + var(--foot-h))}
 
   <div class="layout">
     <div class="editor">
-      <div class="insertbar" id="insertbar"></div>
-
       <!-- Model & output -->
       <section class="card">
         <div class="card-head"><span class="step">SETUP</span><h2>Model and output size</h2><span class="desc">The model sets how many references you can attach. Output size isn't part of the prompt text; it goes in the API or node settings.</span></div>
@@ -425,9 +424,6 @@ body{padding-bottom:calc(40px + var(--foot-h))}
             </label>
           </div>
           <div class="row cols-3">
-            <label class="f">Seed (optional)
-              <input type="text" id="seed" data-bind="seed" inputmode="numeric" placeholder="42">
-            </label>
             <label class="f" id="flex-guid">Guidance [flex] (1.5–10)
               <input type="number" id="guidance" data-bind="guidance" min="1.5" max="10" step="0.5">
             </label>
@@ -454,10 +450,10 @@ body{padding-bottom:calc(40px + var(--foot-h))}
         <div class="card-head"><span class="step">1 · SUBJECT + ACTION</span><h2 id="lead-title">Main subject</h2><span class="desc" id="lead-desc">FLUX.2 pays most attention to what comes first, so lead with the main subject and what it's doing.</span></div>
         <div class="card-body">
           <label class="f"><span id="lead-label">Lead sentence</span>
-            <textarea id="lead" data-bind="lead" data-ins rows="3"></textarea>
+            <textarea id="lead" data-bind="lead" rows="3"></textarea>
           </label>
           <label class="f">Action or pose (optional, if not already in the lead)
-            <input type="text" id="action" data-bind="action" data-ins placeholder="leaning on the railing, looking out to sea">
+            <input type="text" id="action" data-bind="action" placeholder="leaning on the railing, looking out to sea">
           </label>
         </div>
       </section>
@@ -468,7 +464,7 @@ body{padding-bottom:calc(40px + var(--foot-h))}
         <div class="card-body">
           <div class="presets" id="presets"></div>
           <label class="f">Style
-            <textarea id="style" data-bind="style" data-ins rows="2" placeholder="professional studio product photography, clean minimalist aesthetic"></textarea>
+            <textarea id="style" data-bind="style" rows="2" placeholder="professional studio product photography, clean minimalist aesthetic"></textarea>
           </label>
         </div>
       </section>
@@ -479,20 +475,20 @@ body{padding-bottom:calc(40px + var(--foot-h))}
         <div class="card-body">
           <div class="row cols-2">
             <label class="f">Setting / background
-              <input type="text" id="setting" data-bind="setting" data-ins placeholder="a secluded beach in the Philippines">
+              <input type="text" id="setting" data-bind="setting" placeholder="a secluded beach in the Philippines">
             </label>
             <label class="f">Time / season / weather
-              <input type="text" id="time" data-bind="time" data-ins placeholder="hazy late afternoon">
+              <input type="text" id="time" data-bind="time" placeholder="hazy late afternoon">
             </label>
             <label class="f">Lighting
-              <input type="text" id="lighting" data-bind="lighting" data-ins list="dl-light" placeholder="soft diffused window light">
+              <input type="text" id="lighting" data-bind="lighting" list="dl-light" placeholder="soft diffused window light">
             </label>
             <label class="f">Mood / atmosphere
-              <input type="text" id="mood" data-bind="mood" data-ins placeholder="calm, contemplative">
+              <input type="text" id="mood" data-bind="mood" placeholder="calm, contemplative">
             </label>
           </div>
           <label class="f">Composition (optional)
-            <input type="text" id="composition" data-bind="composition" data-ins list="dl-comp" placeholder="rule of thirds, subject in the left third">
+            <input type="text" id="composition" data-bind="composition" list="dl-comp" placeholder="rule of thirds, subject in the left third">
           </label>
         </div>
       </section>
@@ -547,11 +543,11 @@ body{padding-bottom:calc(40px + var(--foot-h))}
         <div class="card-head"><span class="step">7 · PRESERVE + DETAILS</span><h2>What stays, and the finishing details</h2><span class="desc">For edits, say plainly what must not change. Secondary details go last because they carry the least weight.</span></div>
         <div class="card-body">
           <label class="f">Keep unchanged
-            <input type="text" id="keep" data-bind="keep" data-ins placeholder="her pose, the lighting and the overall composition of image 1">
+            <input type="text" id="keep" data-bind="keep" placeholder="her pose, the lighting and the overall composition of image 1">
           </label>
           <label class="inline-check"><input type="checkbox" id="nothing-else" data-bind-check="nothingElse"> End with "Change nothing else."</label>
           <label class="f">Secondary details
-            <textarea id="details" data-bind="details" data-ins rows="2" placeholder="steam curling from a mug in the foreground, dust motes in the light"></textarea>
+            <textarea id="details" data-bind="details" rows="2" placeholder="steam curling from a mug in the foreground, dust motes in the light"></textarea>
           </label>
         </div>
       </section>
@@ -583,10 +579,23 @@ body{padding-bottom:calc(40px + var(--foot-h))}
               <option value="dev">FLUX.2 [dev]</option>
             </select>
           </label>
+          <label class="f gen-count">Images
+            <select id="gen-count" aria-label="Number of images to generate">
+              <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+            </select>
+          </label>
           <label class="inline-check" id="gen-turbo-wrap"><input type="checkbox" id="gen-turbo"> Turbo LoRA <span class="hint" id="gen-turbo-hint"></span></label>
         </div>
+        <div class="gen-seed">
+          <label class="f">Seed
+            <input type="text" id="seed" data-bind="seed" inputmode="numeric" autocomplete="off" placeholder="Random each run">
+          </label>
+          <button type="button" id="seed-dice" title="Pick a random seed and keep it for the next runs">🎲 New</button>
+          <button type="button" id="seed-random" title="Clear the seed: every run gets a new random one">Random</button>
+        </div>
+        <p class="hint gen-seed-hint" id="seed-hint"></p>
         <div class="gen-on out-foot">
-          <span class="hint">Runs locally in ComfyUI at the size and seed set above.</span>
+          <span class="hint">Runs locally in ComfyUI at the output size set in Setup.</span>
           <span class="gen-btns"><button type="button" id="gen-cancel" hidden>Cancel</button><button class="primary" type="button" id="gen-go" disabled>Generate</button></span>
         </div>
         <div class="gen-progress" id="gen-progress" hidden>
@@ -627,6 +636,7 @@ body{padding-bottom:calc(40px + var(--foot-h))}
       <button type="button" id="v-next" aria-label="Next image">▶</button>
       <button type="button" id="v-prompt-toggle" aria-pressed="false">Prompt</button>
       <button type="button" id="v-full">Full screen</button>
+      <button type="button" id="v-seed">Use seed</button>
       <button type="button" id="v-download">Download</button>
       <button type="button" id="v-delete">Delete</button>
       <button type="button" class="primary" id="v-close">Close</button>
@@ -728,7 +738,6 @@ var thumbs = {};
 var captioner = null;           // async function(dataUrl) → caption text
 var capBlock = "Captioning needs ComfyUI. Run npm run dev and open the page it serves."; // why captioning can't run, or ""
 var capState = {};              // ref id → { busy } | { err }
-var lastField = null;
 
 function load(){ try{ var r = localStorage.getItem(KEY); if(!r) return null; var o = JSON.parse(r); var b = blank(); for(var k in b){ if(!(k in o)) o[k]=b[k]; } return o; }catch(e){ return null; } }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
@@ -928,6 +937,7 @@ function checks(prompt){
     var k = String(i+1);
     if(!allText[k] && n>1) out.push(["warn","image "+k,"is attached but the prompt never says how to use it. Give it a role line or mention it in the lead."]);
     if(r.auto && ment[k] && r.role!=="custom") out.push(["info","image "+k,"appears in your text and in its role line. Fine if they agree; switch the role line off if they conflict."]);
+    if(!r.role && r.auto) out.push(["warn","image "+k,"has no role yet. Choose one so its role line gets written."]);
     if(r.role==="custom" && r.auto && !trim(r.detail)) out.push(["warn","image "+k,"is set to Custom but the sentence is empty."]);
   });
   if(n===1 && !allText["1"]) out.push(["info","Single edit","With one input, plain edits like \"Change it to night\" work without naming image 1."]);
@@ -979,37 +989,34 @@ function renderApi(p){
   var body = {prompt: S.format==="json" ? "<the JSON above, as a string>" : (p.length>90 ? p.slice(0,87)+"…" : p)};
   S.refs.forEach(function(r,i){ body[i===0?"input_image":"input_image_"+(i+1)] = "<image "+(i+1)+(trim(r.label)?": "+trim(r.label):"")+", URL or base64>"; });
   body.width = d.w; body.height = d.h;
-  if(trim(S.seed)) body.seed = parseInt(S.seed,10) || S.seed;
+  if(trim(String(S.seed)) && !seedError()) body.seed = parseInt(S.seed,10);
   if(S.upsample) body.prompt_upsampling = true;
   if(S.model==="flex"){ if(trim(String(S.guidance))) body.guidance = parseFloat(S.guidance); if(trim(String(S.steps))) body.steps = parseInt(S.steps,10); }
   body.output_format = "png";
   $("api").textContent = JSON.stringify(body,null,2);
   $("flex-guid").hidden = $("flex-steps").hidden = S.model!=="flex";
+  paintSeed();
 }
-function renderInsertbar(){
-  var bar = $("insertbar"); bar.innerHTML = "";
-  var t = document.createElement("span"); t.className = "t"; t.textContent = "Insert"; bar.appendChild(t);
-  if(!S.refs.length){ var h = document.createElement("span"); h.className = "hint"; h.textContent = "Add a reference image to get image 1, image 2… labels here."; bar.appendChild(h); return; }
-  S.refs.forEach(function(r,i){
-    var b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.style.setProperty("--rc", rc(i));
-    b.innerHTML = "image "+(i+1)+(trim(r.label)?"<small>"+esc(trim(r.label))+"</small>":"");
-    b.title = "Insert “image "+(i+1)+"” at the cursor";
-    b.addEventListener("mousedown", function(e){ e.preventDefault(); });
-    b.addEventListener("click", function(){ insertAtCursor("image "+(i+1)); });
-    bar.appendChild(b);
-  });
-  var h2 = document.createElement("span"); h2.className = "hint"; h2.textContent = "Click to drop the label into the field you were typing in.";
-  bar.appendChild(h2);
+/* ---------- seed: blank = new random seed each run ---------- */
+function seedError(){
+  var v = trim(String(S.seed));
+  if(!v) return "";
+  if(!/^\d+$/.test(v) || +v > Number.MAX_SAFE_INTEGER) return "Seed must be a whole number from 0 to "+Number.MAX_SAFE_INTEGER+", or blank for random.";
+  return "";
 }
-function insertAtCursor(txt){
-  var el = lastField && document.body.contains(lastField) ? lastField : $("lead");
-  var s = el.selectionStart != null ? el.selectionStart : el.value.length, e = el.selectionEnd != null ? el.selectionEnd : s;
-  var before = el.value.slice(0,s), after = el.value.slice(e);
-  var pre = before && !/\s$/.test(before) ? " " : "", post = after && !/^[\s,.;]/.test(after) ? " " : "";
-  el.value = before+pre+txt+post+after;
-  var pos = (before+pre+txt).length; el.focus(); try{ el.setSelectionRange(pos,pos); }catch(_){}
-  el.dispatchEvent(new Event("input",{bubbles:true}));
+var batch = 1; // images per Generate click, set by src/generate.js; above 1 every image gets a random seed
+function paintSeed(){
+  var v = trim(String(S.seed)), err = seedError(), h = $("seed-hint");
+  h.textContent = err ? err
+    : batch > 1 ? "Batch of "+batch+": each image gets its own random seed"+(v ? ", so seed "+v+" is ignored. Set Images to 1 to use it." : ".")
+    : v ? "Fixed: every run uses seed "+v+", so only your prompt changes the result."
+    : "Random: each run gets a new seed. It's saved with the image; use \"Use seed\" in the viewer to keep it.";
+  h.classList.toggle("warn", !!err);
+  $("seed-random").disabled = !v;
 }
+function setSeed(v){ S.seed = v == null ? "" : String(v); $("seed").value = S.seed; changed(); }
+$("seed-dice").addEventListener("click", function(){ setSeed(crypto.getRandomValues(new Uint32Array(1))[0]); });
+$("seed-random").addEventListener("click", function(){ setSeed(""); });
 function updateLeadCopy(){
   var n = S.refs.length;
   $("mode-pill").textContent = n===0 ? "Text to image" : n===1 ? "Single-reference edit" : "Multi-reference ("+n+")";
@@ -1032,7 +1039,7 @@ function renderRefs(){
   var box = $("refs"); box.innerHTML = "";
   S.refs.forEach(function(r,i){
     var el = document.createElement("div"); el.className = "ref"; el.style.setProperty("--rc", rc(i));
-    var opts = ROLES.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===r.role?" selected":"")+'>'+o[1]+'</option>'; }).join("");
+    var opts = '<option value="" disabled'+(r.role?"":" selected")+'>Choose a role…</option>' + ROLES.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===r.role?" selected":"")+'>'+o[1]+'</option>'; }).join("");
     var needsTarget = r.role==="clothing"||r.role==="material";
     el.innerHTML =
       '<div class="drop" tabindex="0" role="button" aria-label="Add thumbnail for image '+(i+1)+'"><span class="num">'+(i+1)+'</span>'+(thumbs[r.id]?'<img alt="">':'<span>Drop or click<br>to preview</span>')+'</div>'+
@@ -1042,15 +1049,16 @@ function renderRefs(){
           '<button type="button" class="ghost" data-act="up" aria-label="Move up"'+(i===0?" disabled":"")+'>↑</button>'+
           '<button type="button" class="ghost" data-act="down" aria-label="Move down"'+(i===S.refs.length-1?" disabled":"")+'>↓</button>'+
           '<button type="button" class="ghost" data-act="caption" data-id="'+r.id+'">'+(capState[r.id]&&capState[r.id].busy?"Captioning…":r.caption?"Re-caption":"Caption")+'</button>'+
+          '<button type="button" class="ghost" data-act="reset" title="Clear the text fields and role. The picture and its caption stay.">Reset</button>'+
           '<button type="button" class="ghost" data-act="del" aria-label="Remove">Remove</button></div>'+
         '<div class="row cols-2">'+
           '<label class="f">What it shows<input type="text" data-k="label" id="rl-'+r.id+'" value="'+esc(r.label)+'" placeholder="the woman, the swing, the cabin…"></label>'+
           '<label class="f">Role<select data-k="role" id="rr-'+r.id+'">'+opts+'</select></label>'+
         '</div>'+
-        (needsTarget?'<label class="f">Apply to<input type="text" data-k="target" data-ins id="rt-'+r.id+'" value="'+esc(r.target)+'" placeholder="the woman in image 1"></label>':'')+
+        (needsTarget?'<label class="f">Apply to<input type="text" data-k="target" id="rt-'+r.id+'" value="'+esc(r.target)+'" placeholder="the woman in image 1"></label>':'')+
         '<div class="row cols-2">'+
-          '<label class="f">'+(r.role==="custom"?"Sentence (mention image "+(i+1)+")":"Placement / extra detail")+'<input type="text" data-k="detail" data-ins id="rd-'+r.id+'" value="'+esc(r.detail)+'" placeholder="'+(r.role==="custom"?"Engrave the logo from image "+(i+1)+" into the tree trunk":"seated at the table, matching scale and perspective")+'"></label>'+
-          '<label class="f">Keep<input type="text" data-k="keep" data-ins id="rk-'+r.id+'" value="'+esc(r.keep)+'" placeholder="its exact shape, colours and labels"></label>'+
+          '<label class="f">'+(r.role==="custom"?"Sentence (mention image "+(i+1)+")":"Placement / extra detail")+'<input type="text" data-k="detail" id="rd-'+r.id+'" value="'+esc(r.detail)+'" placeholder="'+(r.role==="custom"?"Engrave the logo from image "+(i+1)+" into the tree trunk":"seated at the table, matching scale and perspective")+'"></label>'+
+          '<label class="f">Keep<input type="text" data-k="keep" id="rk-'+r.id+'" value="'+esc(r.keep)+'" placeholder="its exact shape, colours and labels"></label>'+
         '</div>'+
         '<p class="ref-line"></p>'+
         (r.caption||capState[r.id] ? '<label class="f">Caption (Florence-2, not added to the prompt)<textarea data-k="caption" id="rc-'+r.id+'" rows="3" placeholder="Captioning…">'+esc(r.caption||"")+'</textarea></label>' : '')+
@@ -1064,15 +1072,22 @@ function renderRefs(){
         r[k] = inp.type==="checkbox" ? inp.checked : inp.value;
         if(k==="role"){ renderRefs(); }
         else { updateRefLine(el, r, i); }
-        if(k==="label") renderInsertbar();
         changed();
       });
-      if(inp.hasAttribute("data-ins")) inp.addEventListener("focus", function(){ lastField = inp; });
     });
     el.querySelectorAll("[data-act]").forEach(function(b){
       b.addEventListener("click", function(){
         var a = b.getAttribute("data-act");
         if(a==="caption"){ runCaption(r); return; }
+        if(a==="reset"){
+          if(!b.classList.contains("armed")){ // two clicks, like Clear all: no confirm() dialog
+            b.classList.add("armed"); b.textContent = "Click again to reset";
+            b._t = setTimeout(function(){ b.classList.remove("armed"); b.textContent = "Reset"; }, 3000);
+            return;
+          }
+          clearTimeout(b._t);
+          r.label = r.detail = r.keep = r.target = r.role = ""; r.auto = true; // picture (thumbs) and caption stay
+        }
         if(a==="del"){ S.refs.splice(i,1); delete thumbs[r.id]; delete capState[r.id]; }
         if(a==="up" && i>0){ S.refs.splice(i-1,0,S.refs.splice(i,1)[0]); }
         if(a==="down" && i<S.refs.length-1){ S.refs.splice(i+1,0,S.refs.splice(i,1)[0]); }
@@ -1138,7 +1153,7 @@ function readThumb(r, file){
   fr.onload = function(){ thumbs[r.id] = fr.result; r.caption = ""; delete capState[r.id]; renderRefs(); notify(); changed(); }; // a new picture needs a new caption
   fr.readAsDataURL(file);
 }
-function refsChanged(){ renderRefs(); renderInsertbar(); updateLeadCopy(); changed(); }
+function refsChanged(){ renderRefs(); updateLeadCopy(); changed(); }
 
 function renderTexts(){
   var box = $("texts"); box.innerHTML = "";
@@ -1152,7 +1167,7 @@ function renderTexts(){
         '<button type="button" class="ghost" data-act="del">Remove</button>'+
       '</div>'+
       '<div class="row cols-2">'+
-        '<label class="f">Placement<input type="text" data-k="placement" data-ins id="tp-'+t.id+'" value="'+esc(t.placement)+'" placeholder="above the door"></label>'+
+        '<label class="f">Placement<input type="text" data-k="placement" id="tp-'+t.id+'" value="'+esc(t.placement)+'" placeholder="above the door"></label>'+
         '<label class="f">Colour (hex, optional)<span class="hexin"><span class="sw"></span><input type="text" data-k="color" id="tc-'+t.id+'" value="'+esc(t.color)+'" placeholder="#FF5733"></span></label>'+
       '</div>';
     bindItem(el, t, S.texts, renderTexts);
@@ -1165,7 +1180,7 @@ function renderColors(){
     var el = document.createElement("div"); el.className = "item";
     el.innerHTML =
       '<div class="hexrow">'+
-        '<label class="f">Object<input type="text" data-k="target" data-ins id="ct-'+c.id+'" value="'+esc(c.target)+'" placeholder="the sofa"></label>'+
+        '<label class="f">Object<input type="text" data-k="target" id="ct-'+c.id+'" value="'+esc(c.target)+'" placeholder="the sofa"></label>'+
         '<label class="f">Hex<span class="hexin"><span class="sw"></span><input type="text" data-k="hex" id="ch-'+c.id+'" value="'+esc(c.hex)+'" placeholder="#1B6B6F"></span></label>'+
         '<label class="f">Gradient to<span class="hexin"><span class="sw"></span><input type="text" data-k="hex2" id="cg-'+c.id+'" value="'+esc(c.hex2||"")+'" placeholder="optional"></span></label>'+
         '<button type="button" class="ghost" data-act="del">Remove</button>'+
@@ -1181,7 +1196,6 @@ function bindItem(el, obj, arr, rerender){
     var paint = function(){ if(sw){ var h = normHex(inp.value); sw.style.background = validHex(h) ? h : "transparent"; } };
     paint();
     inp.addEventListener("input", function(){ obj[k] = inp.value; paint(); changed(); });
-    if(inp.hasAttribute("data-ins")) inp.addEventListener("focus", function(){ lastField = inp; });
   });
   el.querySelector("[data-act=del]").addEventListener("click", function(){ arr.splice(arr.indexOf(obj),1); rerender(); changed(); });
 }
@@ -1206,14 +1220,13 @@ function fillStatic(){
   $("fmt-nl").setAttribute("aria-pressed", S.format!=="json"); $("fmt-json").setAttribute("aria-pressed", S.format==="json");
   $("btn-copy").textContent = S.format==="json" ? "Copy JSON" : "Copy prompt";
 }
-function renderAll(){ fillStatic(); renderRefs(); renderTexts(); renderColors(); renderPresets(); renderInsertbar(); updateLeadCopy(); renderOutput(); }
+function renderAll(){ fillStatic(); renderRefs(); renderTexts(); renderColors(); renderPresets(); updateLeadCopy(); renderOutput(); }
 var saveT; function changed(){ renderOutput(); clearTimeout(saveT); saveT = setTimeout(save, 250); }
 
 /* ---------- wiring ---------- */
 document.querySelectorAll("[data-bind]").forEach(function(el){
   var k = el.getAttribute("data-bind");
   el.addEventListener(el.tagName==="SELECT" ? "change" : "input", function(){ S[k] = el.value; if(k==="style") renderPresets(); changed(); });
-  if(el.hasAttribute("data-ins")) el.addEventListener("focus", function(){ lastField = el; });
 });
 document.querySelectorAll("[data-bind-check]").forEach(function(el){
   el.addEventListener("change", function(){ S[el.getAttribute("data-bind-check")] = el.checked; changed(); });
@@ -1253,7 +1266,7 @@ $("ui-theme").addEventListener("change", function(e){
   try{ localStorage.setItem(UI_KEY, v); }catch(err){}
 });
 
-/* ---------- sticky title bar: publish its height so the insert bar and output column sit below it ---------- */
+/* ---------- sticky title bar: publish its height so the output column sits below it ---------- */
 (function(){
   var head = document.querySelector("header.top");
   var set = function(){ document.documentElement.style.setProperty("--head-h", head.offsetHeight+"px"); };
@@ -1269,6 +1282,9 @@ window.F2P = {
   build: build,
   dims: dims,
   getThumb: function(id){ return thumbs[id]; },
+  setSeed: setSeed,
+  setBatch: function(n){ batch = n; paintSeed(); },
+  seedError: seedError,
   setCaptioner: function(fn){ captioner = fn; paintCaptionButtons(); },
   setCaptionBlock: function(why){ if(why !== capBlock){ capBlock = why; paintCaptionButtons(); } },
   onChange: function(fn){ listeners.push(fn); }

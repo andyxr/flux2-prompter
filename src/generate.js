@@ -10,6 +10,8 @@ const F2P = window.F2P
 const $ = (id) => document.getElementById(id)
 const MODEL_KEY = 'flux2-gen-model'
 const TURBO_KEY = 'flux2-gen-turbo'
+const COUNT_KEY = 'flux2-gen-count'
+const MAX_COUNT = 5
 const LABEL = { klein: 'FLUX.2 [klein] 9B', dev: 'FLUX.2 [dev]' }
 
 const runner = new ComfyRunner()
@@ -24,6 +26,7 @@ const el = {
   card: $('gen-card'),
   model: $('gen-model'),
   turbo: $('gen-turbo'),
+  batch: $('gen-count'),
   turboWrap: $('gen-turbo-wrap'),
   turboHint: $('gen-turbo-hint'),
   go: $('gen-go'),
@@ -59,6 +62,14 @@ el.turbo.checked = readPref(TURBO_KEY) !== '0'
 let lastPromptModel = F2P.getState().model
 el.model.addEventListener('change', () => { writePref(MODEL_KEY, el.model.value); update() })
 el.turbo.addEventListener('change', () => { writePref(TURBO_KEY, el.turbo.checked ? '1' : '0'); update() })
+/** Images per click, 1–MAX_COUNT. Above 1, every image gets its own random seed. */
+function count() {
+  const n = parseInt(el.batch.value, 10)
+  return Number.isFinite(n) ? Math.min(MAX_COUNT, Math.max(1, n)) : 1
+}
+el.batch.value = String(Math.min(MAX_COUNT, Math.max(1, parseInt(readPref(COUNT_KEY), 10) || 1)))
+el.batch.addEventListener('change', () => { writePref(COUNT_KEY, String(count())); F2P.setBatch(count()); update() })
+F2P.setBatch(count())
 F2P.onChange(() => {
   lastError = ''
   const m = F2P.getState().model
@@ -92,7 +103,7 @@ function blocker() {
   if (S.refs.length > cap) return `${LABEL[model]} takes up to ${cap} references; ${S.refs.length} are attached.`
   const noThumb = S.refs.findIndex((r) => !F2P.getThumb(r.id))
   if (noThumb >= 0) return `Attach a picture for image ${noThumb + 1}, or remove it. Pictures aren't kept after a reload.`
-  return ''
+  return count() === 1 ? F2P.seedError() : '' // a batch ignores the seed box
 }
 
 function update() {
@@ -100,6 +111,7 @@ function update() {
   const isDev = el.model.value === 'dev'
   el.turbo.checked = isDev && readPref(TURBO_KEY) !== '0' // klein shows it unticked; dev's choice is remembered
   el.turbo.disabled = !isDev || !!job
+  el.batch.disabled = !!job
   el.turboWrap.classList.toggle('off', !isDev)
   el.turboHint.textContent = isDev ? (el.turbo.checked ? '8 steps, faster' : '20 steps, full quality') : 'only for FLUX.2 [dev]'
   el.turboWrap.title = isDev ? 'Flux_2-Turbo-LoRA: 8 sampling steps instead of 20' : 'The Turbo LoRA only works with FLUX.2 [dev]. Switch "Generate with" to dev to use it.'
@@ -112,7 +124,9 @@ function update() {
   }
   const d = F2P.dims()
   const n = F2P.getState().refs.length
-  el.go.title = `${d.w}×${d.h}${n ? ` with ${n} reference${n > 1 ? 's' : ''}` : ''}`
+  const c = count()
+  el.go.textContent = c > 1 ? `Generate ${c}` : 'Generate'
+  el.go.title = `${c > 1 ? `${c} images at ` : ''}${d.w}×${d.h}${n ? ` with ${n} reference${n > 1 ? 's' : ''}` : ''}`
 }
 
 function setMsg(text, kind = '') {
@@ -214,17 +228,18 @@ async function uploadRef(dataUrl, signal) {
   return runner.client.uploadImage(blob, `ref_${await sha(blob)}.${ext}`, { subfolder: 'flux2-prompter', signal })
 }
 
+let progressPrefix = '' // "Image 2 of 4 · " during a batch
 function showProgress(p) {
   el.progress.hidden = false
   if (p.state === 'queued') {
     el.bar.style.width = '0%'
-    el.pct.textContent = 'Queued in ComfyUI…'
+    el.pct.textContent = `${progressPrefix}Queued in ComfyUI…`
   } else if (p.max) {
     const pc = Math.round((100 * p.value) / p.max)
     el.bar.style.width = `${pc}%`
-    el.pct.textContent = `Step ${p.value} of ${p.max} · ${pc}%`
+    el.pct.textContent = `${progressPrefix}Step ${p.value} of ${p.max} · ${pc}%`
   } else {
-    el.pct.textContent = 'Loading model…'
+    el.pct.textContent = `${progressPrefix}Loading model…`
   }
 }
 
@@ -236,8 +251,10 @@ async function generate() {
   const prompt = F2P.build()
   const d = F2P.dims()
   const size = { width: d.w, height: d.h }
-  const parsed = parseInt(String(S.seed).trim(), 10)
-  const seed = Number.isFinite(parsed) && parsed >= 0 ? parsed : randomSeed()
+  const n = count()
+  // One image honours the seed box; a batch gives every image its own random seed.
+  const fixed = n === 1 ? String(S.seed ?? '').trim() : ''
+  const seeds = Array.from({ length: n }, () => (fixed ? Number(fixed) : randomSeed())) // blocker() has already rejected a bad seed
   const refs = S.refs.map((r) => F2P.getThumb(r.id))
 
   job = { controller: new AbortController() }
@@ -247,34 +264,46 @@ async function generate() {
   setMsg('')
   el.progress.hidden = false
   el.bar.style.width = '0%'
+  progressPrefix = ''
   el.pct.textContent = refs.length ? 'Uploading references…' : 'Starting…'
+  let done = 0
   try {
-    const wf = patchT2I({ positive: prompt, negative: '', seed, prefix: 'flux2-prompter/gen', model, turbo, ...size })
-    for (const dataUrl of refs) addReference(wf, await uploadRef(dataUrl, signal), size)
+    const uploaded = []
+    for (const dataUrl of refs) uploaded.push(await uploadRef(dataUrl, signal))
     el.pct.textContent = 'Freeing VRAM…'
     await runner.enterPhase(model)
-    const [png] = await runner.run(wf, { signal, onProgress: showProgress })
-    const rec = await store.add({
-      id: crypto.randomUUID(),
-      png,
-      prompt,
-      format: S.format,
-      seed,
-      model,
-      turbo,
-      width: d.w,
-      height: d.h,
-      aspect: S.aspect,
-      refCount: refs.length,
-      createdAt: Date.now(),
-    })
-    images.unshift(rec)
-    renderGallery()
+    for (const [i, seed] of seeds.entries()) {
+      progressPrefix = `${n > 1 ? `Image ${i + 1} of ${n} · ` : ''}seed ${seed} · `
+      el.bar.style.width = '0%'
+      el.pct.textContent = `${progressPrefix}Starting…`
+      const wf = patchT2I({ positive: prompt, negative: '', seed, prefix: 'flux2-prompter/gen', model, turbo, ...size })
+      for (const name of uploaded) addReference(wf, name, size)
+      const [png] = await runner.run(wf, { signal, onProgress: showProgress })
+      const rec = await store.add({
+        id: crypto.randomUUID(),
+        png,
+        prompt,
+        format: S.format,
+        seed,
+        model,
+        turbo,
+        width: d.w,
+        height: d.h,
+        aspect: S.aspect,
+        refCount: refs.length,
+        createdAt: Date.now(),
+      })
+      images.unshift(rec)
+      done++
+      renderGallery() // each image shows up as soon as it's ready
+    }
     openViewer(0)
   } catch (e) {
     if (!signal.aborted) lastError = e instanceof Error ? e.message : String(e)
+    if (n > 1 && done) lastError = `${lastError || 'Cancelled'} after ${done} of ${n} images.`
   } finally {
     job = null
+    progressPrefix = ''
     el.progress.hidden = true
     update()
   }
@@ -311,11 +340,13 @@ function renderGallery() {
     tile.innerHTML =
       `<button type="button" class="tile-open" aria-label="View image ${i + 1}" title="${escAttr(metaText(rec))}"><img alt="" loading="lazy"></button>` +
       '<div class="tile-acts">' +
+      `<button type="button" class="tile-btn" data-a="seed" aria-label="Use seed ${rec.seed}" title="Use seed ${rec.seed}">#</button>` +
       '<button type="button" class="tile-btn" data-a="full" aria-label="View full screen" title="Full screen">⛶</button>' +
       '<button type="button" class="tile-btn" data-a="del" aria-label="Delete image" title="Delete">✕</button>' +
       '</div>'
     tile.querySelector('img').src = url(rec)
     tile.querySelector('.tile-open').addEventListener('click', () => openViewer(i))
+    tile.querySelector('[data-a=seed]').addEventListener('click', (e) => { e.stopPropagation(); useSeed(rec) })
     tile.querySelector('[data-a=full]').addEventListener('click', () => openViewer(i, true))
     armDelete(tile.querySelector('[data-a=del]'), () => deleteImage(rec.id), '✕', '?')
     el.gallery.appendChild(tile)
@@ -368,6 +399,8 @@ function showInViewer(i) {
   el.vImg.alt = `Generated image ${i + 1} of ${images.length}`
   el.vMeta.textContent = `${i + 1} / ${images.length} · ${metaText(rec)}`
   el.vPrompt.textContent = rec.prompt
+  $('v-seed').textContent = `Use seed ${rec.seed}`
+  $('v-seed').title = 'Set this as the fixed seed for the next runs'
   $('v-prev').disabled = i <= 0
   $('v-next').disabled = i >= images.length - 1
 }
@@ -397,6 +430,17 @@ $('v-prompt-toggle').addEventListener('click', () => {
   const p = el.vPrompt
   p.hidden = !p.hidden
   $('v-prompt-toggle').setAttribute('aria-pressed', String(!p.hidden))
+})
+/** Make this image's seed the fixed seed for the next runs. */
+function useSeed(rec) {
+  F2P.setSeed(rec.seed)
+  if (!job) setMsg(`Seed set to ${rec.seed}. Click Random to go back to a new seed each run.`)
+}
+$('v-seed').addEventListener('click', () => {
+  const rec = images[viewIndex]
+  if (!rec) return
+  useSeed(rec)
+  $('v-seed').textContent = `Seed ${rec.seed} set ✓`
 })
 $('v-download').addEventListener('click', () => {
   const rec = images[viewIndex]
