@@ -945,6 +945,7 @@ function checks(prompt){
     var k = String(i+1);
     if(!allText[k] && n>1) out.push(["warn","image "+k,"is attached but the prompt never says how to use it. Give it a role line or mention it in the lead."]);
     if(r.auto && ment[k] && r.role!=="custom") out.push(["info","image "+k,"appears in your text and in its role line. Fine if they agree; switch the role line off if they conflict."]);
+    if(!r.role && r.auto) out.push(["warn","image "+k,"has no role yet. Choose one so its role line gets written."]);
     if(r.role==="custom" && r.auto && !trim(r.detail)) out.push(["warn","image "+k,"is set to Custom but the sentence is empty."]);
   });
   if(n===1 && !allText["1"]) out.push(["info","Single edit","With one input, plain edits like \"Change it to night\" work without naming image 1."]);
@@ -1070,7 +1071,7 @@ function renderRefs(){
   var box = $("refs"); box.innerHTML = "";
   S.refs.forEach(function(r,i){
     var el = document.createElement("div"); el.className = "ref"; el.style.setProperty("--rc", rc(i));
-    var opts = ROLES.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===r.role?" selected":"")+'>'+o[1]+'</option>'; }).join("");
+    var opts = '<option value="" disabled'+(r.role?"":" selected")+'>Choose a role…</option>' + ROLES.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===r.role?" selected":"")+'>'+o[1]+'</option>'; }).join("");
     var needsTarget = r.role==="clothing"||r.role==="material";
     el.innerHTML =
       '<div class="drop" tabindex="0" role="button" aria-label="Add thumbnail for image '+(i+1)+'"><span class="num">'+(i+1)+'</span>'+(thumbs[r.id]?'<img alt="">':'<span>Drop or click<br>to preview</span>')+'</div>'+
@@ -1080,6 +1081,7 @@ function renderRefs(){
           '<button type="button" class="ghost" data-act="up" aria-label="Move up"'+(i===0?" disabled":"")+'>↑</button>'+
           '<button type="button" class="ghost" data-act="down" aria-label="Move down"'+(i===S.refs.length-1?" disabled":"")+'>↓</button>'+
           '<button type="button" class="ghost" data-act="caption" data-id="'+r.id+'">'+(capState[r.id]&&capState[r.id].busy?"Captioning…":r.caption?"Re-caption":"Caption")+'</button>'+
+          '<button type="button" class="ghost" data-act="reset" title="Clear the text fields and role. The picture and its caption stay.">Reset</button>'+
           '<button type="button" class="ghost" data-act="del" aria-label="Remove">Remove</button></div>'+
         '<div class="row cols-2">'+
           '<label class="f">What it shows<input type="text" data-k="label" id="rl-'+r.id+'" value="'+esc(r.label)+'" placeholder="the woman, the swing, the cabin…"></label>'+
@@ -1111,6 +1113,15 @@ function renderRefs(){
       b.addEventListener("click", function(){
         var a = b.getAttribute("data-act");
         if(a==="caption"){ runCaption(r); return; }
+        if(a==="reset"){
+          if(!b.classList.contains("armed")){ // two clicks, like Clear all: no confirm() dialog
+            b.classList.add("armed"); b.textContent = "Click again to reset";
+            b._t = setTimeout(function(){ b.classList.remove("armed"); b.textContent = "Reset"; }, 3000);
+            return;
+          }
+          clearTimeout(b._t);
+          r.label = r.detail = r.keep = r.target = r.role = ""; r.auto = true; // picture (thumbs) and caption stay
+        }
         if(a==="del"){ S.refs.splice(i,1); delete thumbs[r.id]; delete capState[r.id]; }
         if(a==="up" && i>0){ S.refs.splice(i-1,0,S.refs.splice(i,1)[0]); }
         if(a==="down" && i<S.refs.length-1){ S.refs.splice(i+1,0,S.refs.splice(i,1)[0]); }
